@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">APP</string>
+    <string name="login_num">学号/教工号：</string>
+    <string name="login_pwd">密码:</string>
+    <string name="login_pwd_hint">(默认为身份证后六位)</string>
+    <string name="login">登录</string>
+    <string name="visitor_login">游客登录</string>
+
 </resources>
