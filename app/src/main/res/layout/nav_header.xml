@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="160dp"
+    android:padding="10dp"
+    android:background="@color/appBlue"
+    >
+    <de.hdodenhof.circleimageview.CircleImageView
+        android:id="@+id/icon_image"
+        android:layout_width = "80dp"
+        android:layout_height = "80dp"
+        android:src="@drawable/nav_icon"
+        android:layout_above="@+id/usernum"
+        />
+    <TextView
+        android:id="@+id/username"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:text="测试员"
+        android:textColor="#fff"
+        android:textSize="14sp"
+
+        />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/usernum"
+        android:layout_above="@+id/username"
+        android:text="031602305"
+        android:textColor="#fff"
+        android:textSize="14sp"
+        />
+
+</RelativeLayout>

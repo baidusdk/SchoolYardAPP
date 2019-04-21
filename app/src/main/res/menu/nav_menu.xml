@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/scenery_icon"
+            android:icon="@drawable/scenery_icon"
+            android:title="景点概览"
+            />
+        <item
+            android:id="@+id/suggestion_icon"
+            android:icon="@drawable/suggestion_icon"
+            android:title="建议"
+            />
+        <item
+            android:id="@+id/set_icon"
+            android:icon="@drawable/set_icon"
+            android:title="设置"
+            />
+        <item
+            android:id="@+id/log_off_icon"
+            android:icon="@drawable/log_off_icon"
+            android:title="注销"
+            />
+
+    </group>
+
+</menu>

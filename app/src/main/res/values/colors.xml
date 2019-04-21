@@ -5,4 +5,8 @@
     <color name="colorAccent">#D81B60</color>
     <color name="colorBlack">#000000</color>
     <color name="appBlue">#2796c3</color>
+    <!--半透明白色-->
+    <color name="transparentWhite">#70ffffff</color>
+    <!--光标灰-->
+    <color name="grayLine">#707070</color>
 </resources>
