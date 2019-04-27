@@ -20,7 +20,7 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
-#-keep class com.baidu.** {*;}
-#-keep class mapsdkvi.com.** {*;}
-#-dontwarn com.baidu.**
+-keep class com.baidu.** {*;}
+-keep class mapsdkvi.com.** {*;}
+-dontwarn com.baidu.**
 

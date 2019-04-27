@@ -7,6 +7,7 @@
     <color name="appBlue">#2796c3</color>
     <!--半透明白色-->
     <color name="transparentWhite">#70ffffff</color>
+    <color name="white">#ffffff</color>
     <!--光标灰-->
     <color name="grayLine">#707070</color>
 </resources>
