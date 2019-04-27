@@ -37,8 +37,7 @@
             android:id="@+id/custom_icon"
             android:layout_width="40dp"
             android:layout_height="match_parent"
-            android:text="@string/custom"
-            android:textColor="@color/white"
+
             />
 
     </LinearLayout>
