@@ -9,6 +9,7 @@
     android:focusable="true"
     android:focusableInTouchMode="true"
     android:id="@+id/main_drawer_layout"
+    android:theme="@style/AppTheme"
     >
     <com.baidu.mapapi.map.MapView
         android:id="@+id/bmapView"
@@ -38,7 +39,9 @@
            android:layout_marginLeft="5dp"
            android:layout_marginRight="5dp"
            android:layout_marginBottom="5dp"
-           android:alpha="0.85"
+           android:focusable="true"
+           android:focusableInTouchMode="true"
+
            >
            <Button
                android:id="@+id/person_icon"
@@ -74,16 +77,23 @@
             android:layout_alignParentBottom="true"
             android:layout_centerHorizontal="true"
             android:layout_marginBottom="70dp"
-            android:alpha="0.85"
 
-
+            />
+        <Button
+            android:background="@drawable/location_icon"
+            android:id="@+id/locotion_icon"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_alignParentBottom="true"
+            android:layout_marginBottom="200dp"
+            android:layout_marginLeft="15dp"
             />
 
     </RelativeLayout>
 
     <android.support.design.widget.NavigationView
         android:id="@+id/nav_view"
-        android:layout_width="220dp"
+        android:layout_width="250dp"
         android:layout_height="match_parent"
         android:layout_gravity="left"
         android:fitsSystemWindows="true"

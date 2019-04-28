@@ -5,5 +5,5 @@
     <string name="login_pwd_hint">(默认为身份证后六位)</string>
     <string name="login">登录</string>
     <string name="visitor_login">游客登录</string>
-
+    <string name="custom">自定义</string>
 </resources>
