@@ -46,8 +46,8 @@ public class ConnectTool {
             Response response = client.newCall(request).execute();
             String temp=response.body().string();
             User u= g.fromJson(temp,User.class);
-            if(u==null)return null;
-            if(u.getAccount()==null||u.getAccount().equals(""))return null;
+            if(u==null) {return null;}
+            if(u.getAccount()==null||u.getAccount().equals("")){return null;}
             return u;
         } catch (IOException e) {
             e.printStackTrace();

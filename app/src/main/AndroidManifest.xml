@@ -44,6 +44,7 @@
             android:process=":remote" />
 
         <activity android:name=".BookmarksActivity" />
+        <activity android:name=".PlanOfPathActivity"></activity>
     </application>
 
 </manifest>

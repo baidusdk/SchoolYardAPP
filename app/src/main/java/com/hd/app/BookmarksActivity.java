@@ -17,6 +17,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.google.gson.Gson;
@@ -57,7 +58,7 @@ public class BookmarksActivity extends AppCompatActivity {
     private String[] wayOfVehicleArray;
     //距离
     private String[] distanceArray;
-
+    private TextView mtitle;
     List<ContactInfo> mList = new ArrayList<>();
 
     @Override
@@ -69,6 +70,8 @@ public class BookmarksActivity extends AppCompatActivity {
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         mRecyclerView.setLayoutManager(layoutManager);
+        mtitle= findViewById(R.id.title_name);
+        mtitle.setText("路径收藏夹");
         /**
          * 初始化适配器
          */
@@ -93,6 +96,7 @@ public class BookmarksActivity extends AppCompatActivity {
         protected String markTime;
         protected String wayOfVehical;
         protected String distance;
+
 
         /**
          * 构造函数，一个卡片内信息展示如下
@@ -166,6 +170,15 @@ public class BookmarksActivity extends AppCompatActivity {
                     //···
                 }
             });
+            /**
+             * 增添cardView
+             */
+            holder.mRelativeLayout.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+
+                }
+            });
         }
 
         //此方法返回列表项的数目
@@ -182,6 +195,9 @@ public class BookmarksActivity extends AppCompatActivity {
             private TextView vUseTime;
             private TextView vDistance;
             private ImageButton iDelete;
+            RelativeLayout mRelativeLayout;
+
+
 
             /**
              * 将参数传给xml内
@@ -198,6 +214,7 @@ public class BookmarksActivity extends AppCompatActivity {
                 vDistance = itemView.findViewById(R.id.tv_distance);
                 //加入删除键
                 iDelete = itemView.findViewById(R.id.ib_delete);
+                mRelativeLayout = itemView.findViewById(R.id.path_background);
             }
         }
     }
@@ -212,6 +229,7 @@ public class BookmarksActivity extends AppCompatActivity {
         for (int i = intBookmarksNumber - 1; i >= 0; i--) {
             elementArray[i] = new ContactInfo(destinationNameArray[i], departNameArray[i], useTimeArray[i], markTimeArray[i], wayOfVehicleArray[i], distanceArray[i]);
             mList.add(elementArray[i]);
+
         }
     }
 
