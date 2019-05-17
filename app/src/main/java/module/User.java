@@ -1,6 +1,8 @@
 package module;
 
-public class User {
+import java.io.Serializable;
+
+public class User implements Serializable {
         private String account;
         private String password;
 
