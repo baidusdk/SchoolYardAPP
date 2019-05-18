@@ -3,6 +3,8 @@ package com.hd.app;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -13,7 +15,6 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import connect.ConnectTool;
 import module.User;
 
 public class LoginActivity extends AppCompatActivity {
@@ -27,6 +28,9 @@ public class LoginActivity extends AppCompatActivity {
     private SharedPreferences.Editor editor;
     private int state = -1;
     private User user = new User();
+    private String account;
+    private String password;
+    private static final int Click_Login=1 ;
 
     private void initView() {
         loginButton = (Button)findViewById(R.id.login_button);
@@ -73,8 +77,8 @@ public class LoginActivity extends AppCompatActivity {
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String account = accountEdit.getText().toString();
-                String password = passwordEdit.getText().toString();
+                account = accountEdit.getText().toString();
+                password = passwordEdit.getText().toString();
 
                 if(account.isEmpty()||password.isEmpty())
                 {
@@ -83,40 +87,7 @@ public class LoginActivity extends AppCompatActivity {
                 else {
                     user.setAccount(account);
                     user.setPassword(password);
-                    //sendLoginRequest();
-                    state = 0;
-                    switch (state) {
-                        case 1:
-                            Toast.makeText(LoginActivity.this, "账号或密码错误", Toast.LENGTH_SHORT).show();
-                            break;
-                        case 0: {//登录成功的状态，状态码0
-                            Toast.makeText(LoginActivity.this, "登录成功", Toast.LENGTH_SHORT).show();
-                            editor = pref.edit();
-                            if(rememberPwd.isChecked())//检查复选框的选中状态
-                            {
-                                editor.putBoolean("remember_password",true);
-                                editor.putString("account",account);
-                                editor.putString("password",password);
-                            }
-                            else
-                            {
-                                editor.putString("account",account);
-                                editor.putString("password","");
-                            }
-//                            else
-//                            {
-//                                editor.clear();
-//                            }
-                            editor.apply();
-                            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                            startActivity(intent);
-                            finish();
-                            break;
-                        }
-                        default: {
-                            Toast.makeText(LoginActivity.this, "服务器连接失败", Toast.LENGTH_SHORT).show();
-                        }
-                    }
+                    sendLoginRequest();
                 }
             }
         });
@@ -136,10 +107,13 @@ public class LoginActivity extends AppCompatActivity {
             public void run() {
                 try {
 
-                    ConnectTool connectTool = new ConnectTool();
-                    user=connectTool.login(user);
-                    if(!user.getAccount().isEmpty())
-                        state = 0;//服务器端返回的账户不是空值
+//                    ConnectTool connectTool = new ConnectTool();
+//                    user=connectTool.login(user);
+//                    if(!user.getAccount().isEmpty())
+                    state = 0;//服务器端返回的账户不是空值
+                    Message message = new Message();
+                    message.what = Click_Login;
+                    handler.sendMessage(message);
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -147,4 +121,49 @@ public class LoginActivity extends AppCompatActivity {
             }
         }).start();
     }
+
+    private Handler handler = new Handler() {
+
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case Click_Login: {
+                    switch (state) {
+                        case 1:
+                            Toast.makeText(LoginActivity.this, "账号或密码错误", Toast.LENGTH_SHORT).show();
+                            break;
+                        case 0: {//登录成功的状态，状态码0
+                            Toast.makeText(LoginActivity.this, "登录成功", Toast.LENGTH_SHORT).show();
+                            editor = pref.edit();
+                            if (rememberPwd.isChecked())//检查复选框的选中状态
+                            {
+                                editor.putBoolean("remember_password", true);
+                                editor.putString("account", account);
+                                editor.putString("password", password);
+                            } else {
+                                editor.putString("account", account);
+                                editor.putString("password", "");
+                            }
+//                            else
+//                            {
+//                                editor.clear();
+//                            }
+                            editor.apply();
+                            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                            intent.putExtra("user_information", user);//用户信息传入下一个界面
+                            startActivity(intent);
+                            finish();
+                            break;
+                        }
+                        default: {
+                            Toast.makeText(LoginActivity.this, "服务器连接失败", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                }
+                default:
+                    break;
+
+            }
+        }
+    };
 }

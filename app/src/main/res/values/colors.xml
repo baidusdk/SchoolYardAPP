@@ -10,4 +10,5 @@
     <color name="white">#ffffff</color>
     <!--光标灰-->
     <color name="grayLine">#707070</color>
+    <color name="Orange">#FFA500</color>
 </resources>

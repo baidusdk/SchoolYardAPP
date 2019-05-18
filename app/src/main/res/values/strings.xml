@@ -6,4 +6,6 @@
     <string name="login">登录</string>
     <string name="visitor_login">游客登录</string>
     <string name="custom">自定义</string>
+    <string name="spot">景点</string>
+    <string name="indoor">室内图</string>
 </resources>

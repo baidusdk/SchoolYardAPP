@@ -22,12 +22,22 @@
     android:layout_height="match_parent"
         android:fitsSystemWindows="true"
     >
+        <ProgressBar
+            android:id="@+id/marker_init_progress"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:visibility="invisible"
+            />
 
     <LinearLayout
+        android:id="@+id/search_box"
         android:layout_width="match_parent"
         android:layout_height="50dp"
         android:layout_marginLeft="20dp"
         android:layout_marginRight="20dp"
+        android:layout_marginTop="10dp"
         android:background="@drawable/frame_style"
         android:orientation="horizontal"
         >
@@ -56,6 +66,8 @@
                android:layout_height="match_parent"
                android:maxLength="38"
                android:maxLines="1"
+               android:textSize="16dp"
+
                />
            <Button
                android:id="@+id/search_icon"
@@ -66,9 +78,9 @@
                />
 
        </LinearLayout>
-
-
     </LinearLayout>
+
+
         <Button
             android:id="@+id/route_icon"
             android:layout_width="100dp"
@@ -77,19 +89,81 @@
             android:layout_alignParentBottom="true"
             android:layout_centerHorizontal="true"
             android:layout_marginBottom="70dp"
-
             />
+
         <Button
             android:background="@drawable/location_icon"
             android:id="@+id/locotion_icon"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:layout_alignParentBottom="true"
             android:layout_marginBottom="200dp"
             android:layout_marginLeft="15dp"
             />
+        <LinearLayout
+            android:layout_width="40dp"
+            android:layout_height="80dp"
+            android:layout_above="@+id/locotion_icon"
+            android:layout_marginLeft="15dp"
+            android:layout_marginBottom="100dp"
+            android:background="@drawable/frame_style"
+            android:orientation="vertical"
+            >
+            <Button
+                android:id="@+id/icon_normal"
+                android:layout_width="match_parent"
+                android:text="常态"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:background="@color/appBlue"
+                />
+            <Button
+                android:id="@+id/icon_follow"
+                android:text="跟随"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:background="@color/white"
+
+                />
+
+        </LinearLayout>
+
+        <android.support.v7.widget.AppCompatCheckBox
+            android:text="@string/spot"
+            android:gravity="center_horizontal"
+            android:textSize="10dp"
+            android:id="@+id/spot_open_icon"
+            android:layout_marginTop="50dp"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_alignParentRight="true"
+            android:layout_below="@+id/search_box"
+            android:layout_marginRight="10dp"
+            android:background="@drawable/spot_check"
+            android:button="@null"
+            android:checked="false"
+            android:alpha="0.85"
+            />
+
+        <Button
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_below="@+id/spot_open_icon"
+            android:layout_alignParentRight="true"
+            android:layout_marginTop="20dp"
+            android:layout_marginRight="10dp"
+            android:id="@+id/indoor_icon"
+            android:background="@drawable/indoor_icon_close"
+            android:text="@string/indoor"
+            android:gravity="center_horizontal"
+            android:textSize="10dp"
+            android:alpha="0.85"
+            />
+
 
     </RelativeLayout>
+
 
     <android.support.design.widget.NavigationView
         android:id="@+id/nav_view"

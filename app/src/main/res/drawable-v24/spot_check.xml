@@ -1,0 +1,9 @@
+<selector xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item
+        android:drawable="@drawable/spot_light"
+        android:state_checked="true"/>
+    <item
+        android:drawable="@drawable/spot_down"
+        android:state_checked="false"/>
+
+</selector>
