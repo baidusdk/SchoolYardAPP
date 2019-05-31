@@ -11,4 +11,7 @@
     <!--光标灰-->
     <color name="grayLine">#707070</color>
     <color name="Orange">#FFA500</color>
+    <color name="lightGray">#e5e5e5</color>
+    <color name="deepBlue1">#607B8B</color>
+    <color name="routeBackGray">#aaaaaa</color>
 </resources>

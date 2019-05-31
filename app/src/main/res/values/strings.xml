@@ -8,4 +8,5 @@
     <string name="custom">自定义</string>
     <string name="spot">景点</string>
     <string name="indoor">室内图</string>
+    <string name="collect_route">收藏路径</string>
 </resources>

@@ -24,7 +24,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".SpotConcreteActivity"></activity>
+        <activity android:name=".RoutePlanActivity"></activity>
+        <activity android:name=".SpotConcreteActivity" />
         <activity android:name=".LoginActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -44,7 +45,7 @@
             android:process=":remote" />
 
         <activity android:name=".BookmarksActivity" />
-        <activity android:name=".PlanOfPathActivity"></activity>
+        <activity android:name=".PlanOfPathActivity" />
     </application>
 
 </manifest>

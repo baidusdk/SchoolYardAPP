@@ -16,6 +16,9 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.CardView;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -25,6 +28,7 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.baidu.location.BDAbstractLocationListener;
@@ -36,6 +40,7 @@ import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BaiduMapOptions;
 import com.baidu.mapapi.map.BitmapDescriptor;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
+import com.baidu.mapapi.map.MapPoi;
 import com.baidu.mapapi.map.MapStatus;
 import com.baidu.mapapi.map.MapStatusUpdate;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
@@ -46,12 +51,15 @@ import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.model.LatLng;
+import com.bm.library.PhotoView;
 import com.google.gson.Gson;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import adapter.FloorListAdapter;
 import de.hdodenhof.circleimageview.CircleImageView;
+import module.Building;
 import module.Spot;
 import module.User;
 
@@ -59,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
     public static MapView mMapView = null;
     public static BaiduMap mBaiduMap;
 
+    private Button routeOpen;
     private Button personList;
     private EditText searchContent;
     private Button search;
@@ -68,11 +77,21 @@ public class MainActivity extends AppCompatActivity {
     private Button follow_icon;
     private Button normal_icon;
     private CheckBox spotOpenCheck;
+    /**
+     * 下面三个元素是室内图功能的按键
+     */
+    private CardView cardView;
+    private Button closeFloorCard;
+    private TextView buildingNameText;
+    public static PhotoView floorImg;
+    //
+
+
     private ProgressBar markerInitProgress;
     public LocationClient mLocationClient;
     private List<String> permissionList = new ArrayList<>();//申请的静态权限表
 
-    public double lastX = 0.0;
+    public static double lastX = 0.0;
     private double mCurrentLantitude;
     private double mCurrentLongitude;
     private MyLocationConfiguration.LocationMode mCurrentMode = MyLocationConfiguration.LocationMode.NORMAL;
@@ -104,6 +123,10 @@ public class MainActivity extends AppCompatActivity {
     private List<Marker> markerList = new ArrayList<>();
 
     private MyLocationConfiguration myLocationConfiguration;
+
+    List<Building> buildingList = new ArrayList<>();
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -181,6 +204,7 @@ public class MainActivity extends AppCompatActivity {
         markerInitProgress = (ProgressBar)findViewById(R.id.marker_init_progress);
         BaiduMapOptions options = new BaiduMapOptions();
         //初始化控件
+        routeOpen = (Button)findViewById(R.id.route_icon);
         normal_icon = (Button)findViewById(R.id.icon_normal);
         follow_icon = (Button)findViewById(R.id.icon_follow);
         personList = (Button) findViewById(R.id.person_icon);
@@ -192,6 +216,27 @@ public class MainActivity extends AppCompatActivity {
 //        myLocationConfiguration = new MyLocationConfiguration(MyLocationConfiguration.LocationMode.COMPASS,true,);
         locationButton = (Button)findViewById(R.id.locotion_icon);
         spotOpenCheck = (CheckBox)findViewById(R.id.spot_open_icon);
+
+        cardView = (CardView)findViewById(R.id.floor_card);
+        closeFloorCard = (Button)findViewById(R.id.close_floorView);
+        buildingNameText = (TextView)findViewById(R.id.building_name);
+        floorImg = (PhotoView)findViewById(R.id.floor_img);
+        floorImg.enable();
+
+
+        LatLng p = new LatLng(1.0,1.0);
+        Integer[] temp = {R.drawable.library_f5,R.drawable.library_f4,R.drawable.library_f3,R.drawable.library_f2,R.drawable.library_f1,
+        };
+
+
+
+        Building b = new Building("图书馆",p,0,5,temp);
+        buildingList.add(b);
+
+//        PhotoView ph = (PhotoView)findViewById(R.id.floor_img);
+//        ph.enable();
+//        ph.setImageResource(R.drawable.library_f1);
+
 
     }
 
@@ -211,9 +256,8 @@ public class MainActivity extends AppCompatActivity {
        // mapView.showZoomControls(true);
         mBaiduMap.setMapStatus(MapStatusUpdateFactory.newMapStatus(builder.build()));//设置地图初始状态
         // 开启定位图层，一定不要少了这句，否则对在地图的设置、绘制定位点将无效
-        mBaiduMap.setMyLocationEnabled(true);
-        //定位初始化
-        mBaiduMap.setIndoorEnable(true);//打开室内图
+        mBaiduMap.setMyLocationEnabled(true); //定位初始化
+        //mBaiduMap.setIndoorEnable(true);//打开室内图
         myLocationConfiguration = new MyLocationConfiguration(mCurrentMode,true,null);
         mBaiduMap.setMyLocationConfiguration(myLocationConfiguration);
         mLocationClient = new LocationClient(getApplicationContext());
@@ -222,6 +266,7 @@ public class MainActivity extends AppCompatActivity {
         option.setOpenGps(true); // 打开gps
         option.setCoorType("bd09ll"); // 设置坐标类型
         option.setScanSpan(1000);//定位的时间间隔//毫秒
+        option.setNeedDeviceDirect(true);
        // option.setLocationMode(LocationClientOption.LocationMode.Hight_Accuracy);//开启高精度定位
         //设置locationClientOption
         mLocationClient.setLocOption(option);
@@ -296,6 +341,17 @@ public class MainActivity extends AppCompatActivity {
      * 初始化监听器
      */
     private void setListener() {
+
+        routeOpen.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this,RoutePlanActivity.class);
+                startActivity(intent);
+            }
+        });
+
+
+
         personList.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -403,7 +459,76 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
+
+        closeFloorCard.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                cardView.setVisibility(View.GONE);
+            }
+        });
+
+//设置地图单击事件监听
+        mBaiduMap.setOnMapClickListener(mapListener);
+
     }
+
+    BaiduMap.OnMapClickListener mapListener = new BaiduMap.OnMapClickListener() {
+        /**
+         * 地图单击事件回调函数
+         *
+         * @param point 点击的地理坐标
+         */
+        @Override
+        public void onMapClick(LatLng point) {
+
+            if(cardView.getVisibility()==View.VISIBLE)
+            {
+                cardView.setVisibility(View.GONE);
+            }
+
+        }
+        /**
+         * 地图内 Poi 单击事件回调函数
+         *
+         * @param mapPoi 点击的 poi 信息
+         */
+        @Override
+        public boolean onMapPoiClick(MapPoi mapPoi) {
+            String poiName =mapPoi.getName(); //名称
+            LatLng point = mapPoi.getPosition(); //坐标
+            RecyclerView recyclerView = findViewById(R.id.floor_list_icon);
+            LinearLayoutManager layoutManager = new LinearLayoutManager(MainActivity.this);
+            recyclerView.setLayoutManager(layoutManager);
+            boolean flag = false;
+            for(int i = 0 ;i<buildingList.size();i++)
+            {
+                Building b = buildingList.get(i);
+
+                if(b.getBuildingName().equals(poiName)) {
+                    floorImg.setImageResource(R.drawable.select_floor_back);
+                    Log.d("地理位置", b.getBuildingName());
+                    FloorListAdapter adapter = new FloorListAdapter(b.getFloorList());
+                    recyclerView.setAdapter(adapter);
+                    buildingNameText.setText(poiName);
+                    cardView.setVisibility(View.VISIBLE);
+                    flag = true;
+                    break;
+                }
+            }
+            if(!flag)
+            {
+                Toast.makeText(MainActivity.this,"当前地点尚未加入室内图",Toast.LENGTH_SHORT).show();
+            }
+            return false;
+        }
+
+
+
+    };
+
+
+
 
     /**
      * 删除marker
@@ -535,6 +660,9 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
+
+
+
     /**
      * 定位监听器类
      */
@@ -552,12 +680,6 @@ public class MainActivity extends AppCompatActivity {
             mCurrentAccracy = location.getRadius();
             mCurrentLantitude = location.getLatitude();
             mCurrentLongitude = location.getLongitude();
-//            MyLocationData locData = new MyLocationData.Builder()
-//                    .accuracy(mCurrentAccracy)
-//                    // 此处设置开发者获取到的方向信息，顺时针0-360
-//                    .direction( mCurrentDirection ).latitude(mCurrentLantitude)
-//                    .longitude(mCurrentLongitude).build();
-//            BitmapDescriptor mCurrentMarker = BitmapDescriptorFactory.fromResource(R.drawable.my_location);
             nlocation = location;
             if (location.getLocType()==BDLocation.TypeGpsLocation||location.getLocType()==BDLocation.TypeNetWorkLocation){
                 navigateTo(location);
@@ -579,4 +701,6 @@ public class MainActivity extends AppCompatActivity {
 
         }
     }
+
+
 }

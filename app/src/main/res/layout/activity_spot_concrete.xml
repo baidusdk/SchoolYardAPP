@@ -12,7 +12,6 @@
         android:layout_width="match_parent"
         android:layout_height="250dp"
         android:fitsSystemWindows="true"
-
         >
         <android.support.design.widget.CollapsingToolbarLayout
             android:layout_width="match_parent"
@@ -25,16 +24,15 @@
 
             >
             <!--轮播图-->
-            <com.panxw.android.imageindicator.ImageIndicatorView
-                    android:id="@+id/indicate_view"
-                     android:layout_width="match_parent"
-                     android:layout_height="match_parent"
-                     android:scaleType="centerCrop"
-                     app:layout_collapseMode = "parallax"
-                android:fitsSystemWindows="true"
 
-                >
-                 </com.panxw.android.imageindicator.ImageIndicatorView>\
+            <com.ocnyang.pagetransformerhelp.BannerViewPager
+                android:id="@+id/spot_pager"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:layout_collapseMode="parallax"
+                android:fitsSystemWindows="true"
+                />
+
 
                  <android.support.v7.widget.Toolbar
                 android:id="@+id/toolbar"

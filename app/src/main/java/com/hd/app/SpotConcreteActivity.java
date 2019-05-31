@@ -1,18 +1,31 @@
 package com.hd.app;
 
+
+import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
-import android.view.MenuItem;
-import android.widget.TextView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
 
-
-import com.panxw.android.imageindicator.AutoPlayManager;
-import com.panxw.android.imageindicator.ImageIndicatorView;
+import com.bm.library.PhotoView;
+import com.bumptech.glide.Glide;
+import com.ocnyang.pagetransformerhelp.BannerItemBean;
+import com.ocnyang.pagetransformerhelp.BannerViewPager;
+import com.ocnyang.pagetransformerhelp.ImageLoaderInterface;
+import com.ocnyang.pagetransformerhelp.transformer.AccordionTransformer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +34,7 @@ import module.SpotInformation;
 
 public class SpotConcreteActivity extends AppCompatActivity {
 
+
     public static final String SPOT_ID ="id";
     public static List<SpotInformation> spotInformationList = new ArrayList<>();
     private String spotid;
@@ -28,7 +42,8 @@ public class SpotConcreteActivity extends AppCompatActivity {
     private CollapsingToolbarLayout collapsingToolbar;
     private ActionBar actionBar;
     private TextView spotInformationText;
-    private ImageIndicatorView imageIndicatorView;
+    private BannerViewPager soptPager;
+    private Integer[] imgArray= null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +70,7 @@ public class SpotConcreteActivity extends AppCompatActivity {
         String spotName = new String() ;
         String spotId = new String();
         String spotText = new String() ;
-        Integer[] imgArray= null;
+
 
         for(SpotInformation spotInformation:spotInformationList)
         {
@@ -71,7 +86,7 @@ public class SpotConcreteActivity extends AppCompatActivity {
             }
         }
 
-        imageIndicatorView = (ImageIndicatorView) findViewById(R.id.indicate_view);
+        soptPager = (BannerViewPager) findViewById(R.id.spot_pager);
         toolbar = (Toolbar)findViewById(R.id.toolbar);
         collapsingToolbar =(CollapsingToolbarLayout)findViewById(R.id.collapsing_toolBar);
         spotInformationText = (TextView)findViewById(R.id.spot_information_text);
@@ -87,21 +102,46 @@ public class SpotConcreteActivity extends AppCompatActivity {
          */
         // 把数组交给图片展播组件
 
-        imageIndicatorView.setupLayoutByDrawable(imgArray);
-        // 展播的风格
-//        indicate_view.setIndicateStyle(ImageIndicatorView.INDICATE_ARROW_ROUND_STYLE);
-        imageIndicatorView.setIndicateStyle(ImageIndicatorView.INDICATE_USERGUIDE_STYLE);
-        // 显示组件
-        imageIndicatorView.show();
-        final AutoPlayManager autoBrocastManager = new AutoPlayManager(imageIndicatorView);
-        //设置开启自动广播
-        autoBrocastManager.setBroadcastEnable(true);
-        //autoBrocastManager.setBroadCastTimes(5);//loop times
-        //设置开始时间和间隔时间
-        autoBrocastManager.setBroadcastTimeIntevel(3000, 3000);
-        //设置循环播放
-        autoBrocastManager.loop();
+        soptPager.setData(getViewPagerDatas(),//设置数据
+                new ImageLoaderInterface() {//设置图片加载器
+                    @Override
+                    public void displayImage(Context context, Object imgPath, ImageView imageView) {
+                        Glide.with(context).load(imgPath).into(imageView);
+                    }
+                }).setPageTransformer(new AccordionTransformer())//设置切换效果
+                .setAutoPlay(true)//设置是否自动播放
+                .setOnBannerItemClickListener(new BannerViewPager.OnBannerItemClickListener() {//设置item的监听事件
+                    @Override
+                    public void OnClickLister(View view, int currentItem) {
 
+
+                        LayoutInflater inflater = LayoutInflater.from(SpotConcreteActivity.this);
+
+                        View imgEntryView = inflater.inflate(R.layout.dialog_photo_entry, null); // 加载自定义的布局文件
+
+                        PhotoView img = (PhotoView) imgEntryView.findViewById(R.id.large_image);
+                        img.enable();//图片缩放手势允许
+                        img.setImageResource(imgArray[currentItem]); // 自己的图片设置方法
+
+                        final MyDialog dialog = new MyDialog(SpotConcreteActivity.this, 0, 0, imgEntryView, R.style.DialogTheme);
+                        dialog.setCancelable(true);
+                        // 自定义dialog
+                        Button close = (Button)imgEntryView.findViewById(R.id.dialog_close);
+
+                        dialog.show();
+
+// 点击布局文件（也可以理解为点击大图）后关闭dialog，这里的dialog不需要按钮
+
+                        close.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                dialog.cancel();
+                            }
+                        });
+
+                    }
+                })
+                .setHaveTitle(false);//设置是否显示标题
         spotInformationText.setText(spotText);
 
     }
@@ -115,6 +155,32 @@ public class SpotConcreteActivity extends AppCompatActivity {
            return super.onOptionsItemSelected(item);
     }
 
+    private List<BannerItemBean> getViewPagerDatas() {
+        List<BannerItemBean> pagerItemBeanList = new ArrayList<>(imgArray.length);
+
+        for (int i = 0; i < imgArray.length; i++) {
+            pagerItemBeanList.add(new BannerItemBean(imgArray[i], ""));
+        }
+        return pagerItemBeanList;
+    }
+
+    public class MyDialog extends Dialog {
+        //    style引用style样式
+        public MyDialog(Context context, int width, int height, View layout, int style) {
+
+            super(context, style);
+
+            setContentView(layout);
+
+            Window window = getWindow();
+
+            WindowManager.LayoutParams params = window.getAttributes();
+
+            params.gravity = Gravity.CENTER;
+
+            window.setAttributes(params);
+        }
+    }
 
 
 
