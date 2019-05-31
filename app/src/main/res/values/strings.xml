@@ -6,7 +6,17 @@
     <string name="login">登录</string>
     <string name="visitor_login">游客登录</string>
     <string name="custom">自定义</string>
+    <string name="begin_navigation">开始导航</string>
+    <string name="my_position">我的位置</string>
+    <string name="input_start_place">输入起点</string>
+    <string name="input_destination">输入终点</string>
+    <string name="please_input_start_place">请输入起点</string>
+    <string name="please_input_destination">请输入终点</string>
+    <string name="navigation">导航</string>
+    <string name="confirm">确定</string>
+    <string name="bybike">随行单车</string>
     <string name="spot">景点</string>
     <string name="indoor">室内图</string>
+    <string name="open_gps">请先打开GPS，提高定位准确度</string>
     <string name="collect_route">收藏路径</string>
 </resources>
