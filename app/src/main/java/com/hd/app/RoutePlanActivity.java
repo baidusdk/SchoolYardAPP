@@ -193,7 +193,6 @@ public class RoutePlanActivity extends AppCompatActivity implements BaiduMap.OnM
         chooseRouteLeft = (Button)findViewById(R.id.route_left);
         chooseRouteRight = (Button)findViewById(R.id.route_right);
 
-
     }
 
 

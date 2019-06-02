@@ -345,7 +345,7 @@ public class MainActivity extends AppCompatActivity {
         routeOpen.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this,RoutePlanActivity.class);
+                Intent intent = new Intent(MainActivity.this,NavigationActivity.class);
                 startActivity(intent);
             }
         });

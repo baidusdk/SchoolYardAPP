@@ -5,13 +5,10 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.KeyEvent;
-import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.RelativeLayout;
 
-import com.hd.app.NavigationActivity;
 import com.hd.app.R;
 
 import java.lang.reflect.Field;
