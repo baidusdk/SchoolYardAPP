@@ -18,4 +18,7 @@
     <string name="spot">景点</string>
     <string name="indoor">室内图</string>
     <string name="open_gps">请先打开GPS，提高定位准确度</string>
+    <string name="collect_route">收藏路径</string>
+    <string name="route_navigation">路线规划</string>
+    <string name="route">路线</string>
 </resources>

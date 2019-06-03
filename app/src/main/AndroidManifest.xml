@@ -26,6 +26,8 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity android:name=".NavigationActivity"></activity>
+        <activity android:name=".RoutePlanActivity"></activity>
+        <activity android:name=".SpotConcreteActivity" />
         <activity android:name=".LoginActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -37,7 +39,7 @@
 
         <meta-data
             android:name="com.baidu.lbsapi.API_KEY"
-            android:value="5HhAsG7Rda2d5FDBYV23TAMppXBzHNa4" />
+            android:value="qCF4TdN7D0EZ5cbP6X6qP7AvFQqmZdO1" />
 
         <service
             android:name="com.baidu.location.f"

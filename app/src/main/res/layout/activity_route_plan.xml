@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".RoutePlanActivity"
+    android:fitsSystemWindows="true"
+    android:theme="@style/AppTheme"
+    >
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        >
+    <include layout="@layout/title_bar"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="130dp"
+            android:showDividers="end"
+            android:divider="@color/grayLine"
+            android:orientation="vertical"
+            >
+
+
+            <EditText
+                android:id="@+id/begin_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="起点" />
+        <EditText
+            android:id="@+id/end_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="终点"
+            />
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/search_route_icon"
+                android:text="搜索"
+                android:background="@color/appBlue"
+                android:textColor="@color/white"
+                />
+        </LinearLayout>
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/lightGray"
+            >
+            <com.baidu.mapapi.map.MapView
+                android:id="@+id/bmapRView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clickable="true" />
+            <android.support.v7.widget.CardView
+                android:id="@+id/route_inform_card"
+                android:layout_width="320dp"
+                android:layout_height="160dp"
+                app:cardCornerRadius="10dp"
+                android:background="@drawable/route_card_bk"
+                android:layout_alignParentBottom="true"
+                android:layout_centerHorizontal="true"
+                android:layout_marginBottom="50dp"
+                android:visibility="visible"
+                >
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+                    <Button
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:background="@drawable/left_arrow"
+                        android:layout_marginLeft="20dp"
+                        android:id="@+id/route_left"
+                        />
+                    <TextView
+                        android:id="@+id/choose_route_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="20dp"
+                        android:layout_centerHorizontal="true"
+                        android:text="路线一"
+                        android:gravity="center"
+                        />
+                    <Button
+                        android:id="@+id/route_right"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_alignParentRight="true"
+                        android:layout_marginRight="20dp"
+                        android:background="@drawable/right_arrow"
+                        />
+
+                <LinearLayout
+                    android:id="@+id/lin_1"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginRight="20dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="20dp"
+                    android:layout_marginLeft="20dp"
+                    android:orientation="vertical"
+                    >
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+
+                        <LinearLayout
+
+                            android:layout_width="match_parent"
+                            android:layout_height="30dp"
+                            android:layout_above="@+id/r_linebg"
+                            android:orientation="horizontal"
+                            android:layout_marginBottom="15dp"
+                            >
+
+                            <LinearLayout
+
+                                android:layout_width="80dp"
+                                android:layout_height="30dp"
+                                android:layout_above="@+id/r_linebg"
+                                android:layout_marginBottom="15dp"
+                                android:orientation="horizontal"
+                               >
+
+                                    <Button
+                                        android:id="@+id/on_walk"
+                                        android:layout_width="0dp"
+                                        android:layout_height="match_parent"
+                                        android:layout_weight="1"
+                                        android:background="@drawable/route_mode_walk_select"
+                                        android:textSize="12dp"
+                                        android:textColor="@color/white"
+                                        android:text="步行"
+                                        android:gravity="center"
+                                        android:checked="true"
+                                        />
+                                    <Button
+                                        android:id="@+id/on_bike"
+                                        android:layout_width="0dp"
+                                        android:layout_height="match_parent"
+                                        android:layout_weight="1"
+                                        android:background="@drawable/route_mode_bike_notselect"
+                                        android:text="骑行"
+                                        android:textSize="12dp"
+                                        android:textColor="@color/appBlue"
+                                        android:gravity="center"
+                                        />
+
+                                </LinearLayout>
+                            
+                            
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                />
+
+                            <android.support.v7.widget.AppCompatCheckBox
+                                android:id="@+id/collect_route_icon"
+                                android:layout_width="30dp"
+                                android:layout_height="30dp"
+                                android:layout_marginBottom="15dp"
+                                android:background="@drawable/is_or_uncollected"
+                                android:button="@null"
+                                android:checked="false"
+
+                                />
+                        <TextView
+                            android:gravity="center_vertical"
+                            android:text="@string/collect_route"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            />
+                        </LinearLayout>
+
+                        <ImageView
+                            android:id="@+id/r_linebg"
+                            android:layout_width="180dp"
+                            android:layout_height="1dp"
+                            android:layout_alignParentLeft="true"
+                            android:layout_centerVertical="true"
+                            android:background="@color/grayLine" />
+
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="30dp"
+                            android:layout_below="@+id/r_linebg"
+                            android:orientation="horizontal"
+                            android:layout_marginTop="15dp"
+                            >
+                            <TextView
+                                android:id="@+id/route_time_text"
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent"
+                                android:gravity="center_vertical"
+                                android:text="19分钟"
+                                />
+                            <TextView
+                                android:id="@+id/route_length_text"
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent"
+                                android:gravity="center_vertical"
+                                android:text="1.5公里"
+                                android:layout_marginLeft="15dp"
+                                />
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_weight="1"
+                                android:layout_height="match_parent" />
+                            <Button
+                                android:text="开始导航"
+                                android:textColor="@color/white"
+                                android:textSize="12dp"
+                                android:id="@+id/begin_guide_icon"
+                                android:layout_width="85dp"
+                                android:layout_height="match_parent"
+                                android:background="@drawable/begin_guide_icon_bk"
+                                />
+
+                          </LinearLayout>
+
+
+
+                    </RelativeLayout>
+
+
+
+                </LinearLayout>
+                <Button
+                    android:id="@+id/hide_routecard_icon"
+                    android:layout_width="16dp"
+                    android:layout_height="20dp"
+                    android:background="@drawable/down_arrow"
+                    android:layout_alignParentBottom="true"
+                    android:layout_centerHorizontal="true"
+                    />
+                </RelativeLayout>
+            </android.support.v7.widget.CardView>
+
+
+            <Button
+                android:id="@+id/show_routecard_icon"
+                android:layout_width="16dp"
+                android:layout_height="20dp"
+                android:background="@drawable/up_arrow"
+                android:layout_alignParentBottom="true"
+                android:layout_centerHorizontal="true"
+                android:visibility="gone"
+                />
+        </RelativeLayout>
+
+
+    </LinearLayout>
+
+</android.support.constraint.ConstraintLayout>
