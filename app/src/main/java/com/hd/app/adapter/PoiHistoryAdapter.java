@@ -58,9 +58,9 @@ public class PoiHistoryAdapter extends RecyclerView.Adapter<PoiHistoryAdapter.My
     @Override
     public void onBindViewHolder(MyViewHolder holder, int position) {
         PoiInfo poi = list.get(position);
-        holder.place.setText(poi.address);
+        holder.place.setText(poi.getName());
         //这个看着删 好像没用。
-        holder.district.setText(poi.getName());
+        holder.district.setText(poi.getAddress());
         holder.itemView.setTag(position);
 
     }
