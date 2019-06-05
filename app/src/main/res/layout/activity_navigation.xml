@@ -150,7 +150,6 @@
                 android:background="@drawable/bt_book_selector"
                 android:clickable="true"
                 android:gravity="center"
-                android:onClick="startNavigation"
                 android:padding="12dp"
                 android:paddingTop="1dp"
                 android:paddingBottom="1dp"
