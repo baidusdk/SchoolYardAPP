@@ -4,11 +4,14 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -20,6 +23,7 @@ import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -44,6 +48,12 @@ import com.baidu.mapapi.model.LatLng;
 import com.baidu.mapapi.search.core.PoiInfo;
 import com.baidu.mapapi.search.core.RouteLine;
 import com.baidu.mapapi.search.core.SearchResult;
+import com.baidu.mapapi.search.geocode.GeoCodeOption;
+import com.baidu.mapapi.search.geocode.GeoCodeResult;
+import com.baidu.mapapi.search.geocode.GeoCoder;
+import com.baidu.mapapi.search.geocode.OnGetGeoCoderResultListener;
+import com.baidu.mapapi.search.geocode.ReverseGeoCodeOption;
+import com.baidu.mapapi.search.geocode.ReverseGeoCodeResult;
 import com.baidu.mapapi.search.poi.OnGetPoiSearchResultListener;
 import com.baidu.mapapi.search.poi.PoiCitySearchOption;
 import com.baidu.mapapi.search.poi.PoiDetailResult;
@@ -74,6 +84,8 @@ import com.hd.app.base.BaseActivity;
 import com.hd.app.util.LocationManager;
 import com.hd.app.util.Utils;
 
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -81,10 +93,12 @@ import java.util.List;
 import apiTools.BikingRouteOverlay;
 import apiTools.OverlayManager;
 import apiTools.WalkingRouteOverlay;
+import connect.ConnectTool;
 import module.RouteColloctionItem;
 
 import static android.view.View.GONE;
 import static com.hd.app.MainActivity.lastX;
+import static com.hd.app.MainActivity.nlocation;
 
 //import static com.hd.app.util.NavUtil.activityList;
 
@@ -92,9 +106,69 @@ import static com.hd.app.MainActivity.lastX;
  * Created by gaolei on 17/3/29.
  */
 
-public class NavigationActivity extends BaseActivity implements
+public class NavigationActivity extends BaseActivity implements OnGetGeoCoderResultListener,
         OnGetSuggestionResultListener, PoiSuggestionAdapter.OnItemClickListener
         , PoiHistoryAdapter.OnHistoryItemClickListener,BaiduMap.OnMapClickListener, OnGetRoutePlanResultListener {
+
+    /**
+     * 地理编码,硬核解决骑行规划问题，辣鸡百度问题反馈
+     * @param savedInstanceState
+     */
+
+    private GeoCoder mCoder;
+    private double bikeLatitude = 0;
+    private double bikeLogitude = 0;
+
+    private boolean isBegin = false;
+    private boolean isEnd = false;
+
+    private String beginName = null;
+    private String endName = null;
+
+    @Override
+    public void onGetGeoCodeResult(GeoCodeResult geoCodeResult) {
+        if (null != geoCodeResult && null != geoCodeResult.getLocation()) {
+            if (geoCodeResult == null || geoCodeResult.error != SearchResult.ERRORNO.NO_ERROR) {
+                Toast.makeText(NavigationActivity.this,"抱歉，未找到当前地理位置",Toast.LENGTH_SHORT).show();
+                return;
+            } else {
+                    bikeLatitude = geoCodeResult.getLocation().latitude;
+                    bikeLogitude= geoCodeResult.getLocation().longitude;
+            }
+        }
+    }
+
+    private String myAddressName = null;
+    //反地理编码
+    @Override
+    public void onGetReverseGeoCodeResult(ReverseGeoCodeResult result) {
+
+        if (result == null || result.error != SearchResult.ERRORNO.NO_ERROR) {
+            return;
+        }
+        if (result != null && result.error == SearchResult.ERRORNO.NO_ERROR) {
+
+            if(isBegin)
+            {
+                beginName = result.getAddress();
+                isBegin = false;
+            }
+            if(isEnd)
+            {
+                endName = result.getAddress();
+                isEnd =false;
+            }
+
+        }
+    }
+
+
+
+    //
+    private SharedPreferences pref;//用于获取user信息
+    private static final int Click_Collect_Route = 1;
+    private String userAccount;
+
 
     /**
      * title
@@ -106,7 +180,7 @@ public class NavigationActivity extends BaseActivity implements
      */
     private RelativeLayout routeMap;
     private Button locationButton;
-    private BDLocation nlocation = null;
+//    private BDLocation nlocation = null;
     private ImageView returnIocn;
 
     private CheckBox routeCollectBox;
@@ -204,8 +278,17 @@ public class NavigationActivity extends BaseActivity implements
     LatLng startLL, endLL, tempLL;
     PoiHistoryAdapter poiHistoryAdapter;
     PoiSearch poiSearch;
-
     List<PoiInfo> poiInfo;
+
+
+    private String actionId = null;
+    private double endLatitude;
+    private double endLogitude;
+
+    private boolean isLocationSpot = true;
+
+
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -213,9 +296,30 @@ public class NavigationActivity extends BaseActivity implements
         setStatusBar();
         init();
         initMap();
+        mCoder = GeoCoder.newInstance();
+        mCoder.setOnGetGeoCodeResultListener(this);
         getSensorManager();
         initPoiListener();
+
         setListener();
+
+        Intent intent = getIntent();
+        if(intent.getStringExtra("action").equals("1"))
+        {
+            actionId = intent.getStringExtra("action");
+            endLatitude=intent.getDoubleExtra("latitude",0.0000000000);
+            endLogitude=intent.getDoubleExtra("logitude",0.0000000000);
+            Log.d("终点坐标",String.valueOf(endLatitude));
+            destination_edit.setText(intent.getStringExtra("spotName"));
+
+            walkingRoutePlan("我的位置","景点");
+            routeMap.setVisibility(View.VISIBLE);
+            routeInformCard.setVisibility(View.VISIBLE);
+        }
+        if(intent.getStringExtra("action").equals("2"))
+        {
+            //从路径收藏夹打开路径规划
+        }
     }
 
 
@@ -267,8 +371,32 @@ public class NavigationActivity extends BaseActivity implements
         searchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                isLocationSpot = false;
                 beginLocation = start_place_edit.getText().toString().trim();
                 endLocation = destination_edit.getText().toString().trim();
+                if(beginLocation.equals("我的位置"))
+                {
+
+                    isBegin = true;
+                    mCoder.geocode(new GeoCodeOption().city("福州").address(endLocation));
+                    LatLng p = new LatLng(nlocation.getLatitude(),nlocation.getLongitude());
+                    ReverseGeoCodeOption options = new ReverseGeoCodeOption().location(p);
+                    mCoder.reverseGeoCode(options);
+//                    beginName = myAddressName;
+//                    myAddressName = null;
+
+                }
+                if(endLocation.equals("我的位置"))
+                {
+                    isEnd=true;
+                    mCoder.geocode(new GeoCodeOption().city("福州").address(beginLocation));
+                    LatLng p = new LatLng(nlocation.getLatitude(),nlocation.getLongitude());
+                    ReverseGeoCodeOption options = new ReverseGeoCodeOption().location(p);
+                    mCoder.reverseGeoCode(options);
+//                    endName = myAddressName;
+//                    myAddressName = null;
+
+                }
                 if(beginLocation.isEmpty()||endLocation.isEmpty())
                 {
                     Toast.makeText(NavigationActivity.this,"起点和终点不能为空",Toast.LENGTH_SHORT).show();
@@ -335,11 +463,84 @@ public class NavigationActivity extends BaseActivity implements
                 }
             }
         });
+
+        routeCollectBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked)
+                {
+                    doCollectRoute();
+                    routeCollectBox.setClickable(false);
+                }
+
+            }
+        });
+
     }
+
+    /**
+     * 收藏路径，必须开线程
+     */
+
+    private void doCollectRoute()
+    {
+        RouteColloctionItem rt = routeList.get(listPoint);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    ConnectTool connectTool = new ConnectTool();//建立连接
+                    String temp=connectTool.routeCollectRequest(rt);
+                    Log.d("登录标识", temp);
+                    JSONObject jsonObject = new JSONObject(temp);
+                    String s = jsonObject.getString("msg");
+                    if(s.equals("success"))
+                        Toast.makeText(NavigationActivity.this, "收藏成功", Toast.LENGTH_SHORT).show();
+                    else
+                    {
+                        Toast.makeText(NavigationActivity.this,"网络错误，收藏失败",Toast.LENGTH_SHORT).show();
+                    }
+                    Message message = new Message();
+                    message.what = Click_Collect_Route;
+                    handler.sendMessage(message);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+
+    }
+
+    /**
+     * 开子线程执行网络操作
+     */
+    private Handler handler = new Handler() {
+
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case Click_Collect_Route: {
+                }
+                default:
+                    break;
+            }
+        }
+    };
+
+
+
+
+
+
+
 
 
     private void init()
     {
+
+
+        pref = getSharedPreferences("user",Context.MODE_PRIVATE);
+        userAccount = pref.getString("account","");
 
 
         returnIocn = (ImageView) findViewById(R.id.menu_icon);
@@ -379,7 +580,6 @@ public class NavigationActivity extends BaseActivity implements
         recyclerviewPoiHistory.addItemDecoration(new RecyclerViewDivider(
                 this, LinearLayoutManager.HORIZONTAL, 1,
                 ContextCompat.getColor(this, R.color.color_c8cacc)));
-
 
     }
 
@@ -501,22 +701,30 @@ public class NavigationActivity extends BaseActivity implements
         mBaiduMap.clear();
         PlanNode stNode = null;
         PlanNode enNode = null;
-        if(begin.equals("我的位置")) {
-            LatLng p = new LatLng(nlocation.getLatitude(),nlocation.getLongitude());
-            stNode = PlanNode.withLocation(p);
-        }
-        else
+        if(actionId!=null&&actionId.equals("1")&&isLocationSpot)
         {
-            stNode = PlanNode.withCityNameAndPlaceName("福州",begin);
-        }
-        if(end.equals("我的位置")) {
-            LatLng p = new LatLng(nlocation.getLatitude(),nlocation.getLongitude());
-            enNode = PlanNode.withLocation(p);
+            LatLng pBegin = new LatLng(nlocation.getLatitude(),nlocation.getLongitude());
+            LatLng pEnd = new LatLng(endLatitude,endLogitude);
+            stNode = PlanNode.withLocation(pBegin);
+            enNode = PlanNode.withLocation(pEnd);
 
         }
-        else
-        {
-            enNode = PlanNode.withCityNameAndPlaceName("福州", end);
+        else {
+            if (begin.equals("我的位置")) {
+                LatLng p = new LatLng(nlocation.getLatitude(), nlocation.getLongitude());
+                stNode = PlanNode.withLocation(p);
+            } else {
+                stNode = PlanNode.withCityNameAndPlaceName("福州", begin);
+                beginName = begin;
+            }
+            if (end.equals("我的位置")) {
+                LatLng p = new LatLng(nlocation.getLatitude(), nlocation.getLongitude());
+                enNode = PlanNode.withLocation(p);
+
+            } else {
+                enNode = PlanNode.withCityNameAndPlaceName("福州", end);
+                endName = end;
+            }
         }
         mSearch.walkingSearch((new WalkingRoutePlanOption())
                 .from(stNode).to(enNode));
@@ -525,26 +733,42 @@ public class NavigationActivity extends BaseActivity implements
 
     private void bikingRoutePlan(String begin,String end)
     {
+        Log.d("骑行路线规划", "bikingRoutePlan: "+end);
         mBaiduMap.clear();
-        Log.d("骑行路线规划起点", begin);
-        Log.d("骑行路线规划终点", end);
         PlanNode stNode = null;
         PlanNode enNode = null;
-        if(begin.equals("我的位置")) {
-            LatLng p = new LatLng(nlocation.getLatitude(),nlocation.getLongitude());
-            stNode = PlanNode.withLocation(p);
-        }
-        else
+        if(actionId!=null&&actionId.equals("1")&&isLocationSpot)
         {
-            stNode = PlanNode.withCityNameAndPlaceName("福州",begin);
+            LatLng pBegin = new LatLng(nlocation.getLatitude(),nlocation.getLongitude());
+            LatLng pEnd = new LatLng(endLatitude,endLogitude);
+            stNode = PlanNode.withLocation(pBegin);
+            enNode = PlanNode.withLocation(pEnd);
         }
-        if(end.equals("我的位置")) {
-            LatLng p = new LatLng(nlocation.getLatitude(),nlocation.getLongitude());
-            enNode = PlanNode.withLocation(p);
-        }
-        else
-        {
-            enNode = PlanNode.withCityNameAndPlaceName("福州", end);
+        else {
+            if (begin.equals("我的位置")) {
+                LatLng p = new LatLng(nlocation.getLatitude(), nlocation.getLongitude());
+                stNode = PlanNode.withLocation(p);
+                LatLng p1 = new LatLng(bikeLatitude,bikeLogitude);
+                //Log.d("骑行精度", String.valueOf(bikeLatitude));
+                enNode = PlanNode.withLocation(p1);
+
+            } else {
+                stNode = PlanNode.withCityNameAndPlaceName("福州", begin);
+                beginName = begin;
+            }
+            if (end.equals("我的位置")&&enNode==null) {
+                LatLng p = new LatLng(nlocation.getLatitude(), nlocation.getLongitude());
+                enNode = PlanNode.withLocation(p);
+               // mCoder.geocode(new GeoCodeOption().city("福州").address(begin));
+                LatLng p1 = new LatLng(bikeLatitude,bikeLogitude);
+                stNode = PlanNode.withLocation(p1);
+
+                //  LatLng p1 = new LatLng(nlocation.getLatitude(),nlocation.getLongitude());
+
+            } else if(enNode==null){
+                enNode = PlanNode.withCityNameAndPlaceName("福州", end);
+                endName = end;
+            }
         }
         mSearch.bikingSearch((new BikingRoutePlanOption().ridingType(0))
                 .from(stNode).to(enNode));
@@ -596,7 +820,8 @@ public class NavigationActivity extends BaseActivity implements
 //            nodeIndex = -1;
 //            mBtnPre.setVisibility(View.VISIBLE);
 //            mBtnNext.setVisibility(View.VISIBLE);
-
+            routeCollectBox.setClickable(true);//收藏按钮点击开放
+            routeCollectBox.setChecked(false);//默认未收藏
             Log.d("aaaaaab",String.valueOf(result.getRouteLines().size()) );
             if (result.getRouteLines().size() > 1) {
                 Toast.makeText(NavigationActivity.this,"找到合适步行路径"+String.valueOf(result.getRouteLines().size())+"条",Toast.LENGTH_SHORT).show();
@@ -605,7 +830,20 @@ public class NavigationActivity extends BaseActivity implements
                 {
                     route = result.getRouteLines().get(i);
                     Date dt = new Date();
-                    RouteColloctionItem routeItem = new RouteColloctionItem("骑行",dt.toString(),route.getStarting().getTitle(),route.getTerminal().getTitle(),route.getDuration() / 60,route.getDistance());
+                    double bla = route.getStarting().getLocation().latitude;
+                    double blo = route.getStarting().getLocation().longitude;
+                    double ela = route.getTerminal().getLocation().latitude;
+                    double elo = route.getTerminal().getLocation().longitude;
+                    if(beginName==null)
+                    {
+                        beginName = "我的位置";
+                    }
+                    if(endName==null)
+                    {
+                        endName="我的位置";
+                    }
+
+                    RouteColloctionItem routeItem = new RouteColloctionItem(userAccount,"骑行",dt.toString(),beginName,endName,route.getDuration() / 60,route.getDistance(),bla,blo,ela,elo);
                     routeList.add(routeItem);
                     listPoint = 0;
                 }
@@ -625,8 +863,31 @@ public class NavigationActivity extends BaseActivity implements
                 Toast.makeText(NavigationActivity.this,"找到合适步行路径1条",Toast.LENGTH_SHORT).show();
                 route = result.getRouteLines().get(0);
                 Date dt = new Date();
-                RouteColloctionItem routeItem = new RouteColloctionItem("骑行",dt.toString(),route.getStarting().getTitle(),route.getTerminal().getTitle(),route.getDuration() / 60,route.getDistance());
+                double bla = route.getStarting().getLocation().latitude;
+                double blo = route.getStarting().getLocation().longitude;
+                double ela = route.getTerminal().getLocation().latitude;
+                double elo = route.getTerminal().getLocation().longitude;
+                if(beginName==null)
+                {
+                    beginName = "我的位置";
+                }
+                if(endName==null)
+                {
+                    endName="我的位置";
+                }
+
+                RouteColloctionItem routeItem = new RouteColloctionItem(userAccount,"骑行",dt.toString(),beginName,endName,route.getDuration() / 60,route.getDistance(),bla,blo,ela,elo);
+
                 routeList.add(routeItem);
+                Log.d("用户",routeItem.getUserAccount());
+                Log.d("时间",routeItem.getTime());
+                Log.d("起点", routeItem.getBeginLocation());
+                Log.d("终点",routeItem.getEndLocation());
+                Log.d("起点纬度", String.valueOf(bla));
+                Log.d("起点经度",String.valueOf(blo));
+                Log.d("终点纬度", String.valueOf(bla));
+                Log.d("终点经度", String.valueOf(blo));
+
                 chooseRouteText.setText("路径1");
                 costTimeText.setText(String.valueOf(route.getDuration()/60)+"分钟");
                 distanceText.setText(String.valueOf(route.getDistance())+"米");
@@ -673,6 +934,8 @@ public class NavigationActivity extends BaseActivity implements
             return;
         }
         if (result.error == SearchResult.ERRORNO.NO_ERROR) {
+            routeCollectBox.setClickable(true);//收藏按钮点击开放
+            routeCollectBox.setChecked(false);//默认未收藏
 //
             if (result.getRouteLines().size() > 1) {
                 Toast.makeText(NavigationActivity.this,"找到合适骑行路径"+String.valueOf(result.getRouteLines().size())+"条",Toast.LENGTH_SHORT).show();
@@ -681,7 +944,20 @@ public class NavigationActivity extends BaseActivity implements
 
                     route = result.getRouteLines().get(i);
                     Date dt = new Date();
-                    RouteColloctionItem routeItem = new RouteColloctionItem("骑行",dt.toString(),route.getStarting().getTitle(),route.getTerminal().getTitle(),route.getDuration() / 60,route.getDistance());
+                    double bla = route.getStarting().getLocation().latitude;
+                    double blo = route.getStarting().getLocation().longitude;
+                    double ela = route.getTerminal().getLocation().latitude;
+                    double elo = route.getTerminal().getLocation().longitude;
+                    if(beginName==null)
+                    {
+                        beginName = "我的位置";
+                    }
+                    if(endName==null)
+                    {
+                        endName="我的位置";
+                    }
+
+                    RouteColloctionItem routeItem = new RouteColloctionItem(userAccount,"骑行",dt.toString(),beginName,endName,route.getDuration() / 60,route.getDistance(),bla,blo,ela,elo);
                     routeList.add(routeItem);
                     listPoint = 0;
                 }
@@ -700,7 +976,19 @@ public class NavigationActivity extends BaseActivity implements
                 Toast.makeText(NavigationActivity.this,"找到合适骑行路径1条",Toast.LENGTH_SHORT).show();
                 route = result.getRouteLines().get(0);
                 Date dt = new Date();
-                RouteColloctionItem routeItem = new RouteColloctionItem("骑行",dt.toString(),route.getStarting().getTitle(),route.getTerminal().getTitle(),route.getDuration() / 60,route.getDistance());
+                double bla = route.getStarting().getLocation().latitude;
+                double blo = route.getStarting().getLocation().longitude;
+                double ela = route.getTerminal().getLocation().latitude;
+                double elo = route.getTerminal().getLocation().longitude;
+                if(beginName==null)
+                {
+                    beginName = "我的位置";
+                }
+                if(endName==null)
+                {
+                    endName="我的位置";
+                }
+                RouteColloctionItem routeItem = new RouteColloctionItem(userAccount,"骑行",dt.toString(),beginName,endName,route.getDuration() / 60,route.getDistance(),bla,blo,ela,elo);
                 routeList.add(routeItem);
                 costTimeText.setText(String.valueOf(route.getDuration() / 60) + "分钟");
                 distanceText.setText(String.valueOf(route.getDistance()) + "米");
@@ -721,7 +1009,6 @@ public class NavigationActivity extends BaseActivity implements
         }
 
     }
-
 
     @Override
     public void onGetTransitRouteResult(TransitRouteResult transitRouteResult) {
@@ -1035,6 +1322,7 @@ public class NavigationActivity extends BaseActivity implements
         mBaiduMap.setMyLocationEnabled(false);
         mMapView.onDestroy();
         mMapView = null;
+        mCoder.destroy();
         super.onDestroy();
     }
 

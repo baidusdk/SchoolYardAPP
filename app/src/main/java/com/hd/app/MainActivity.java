@@ -208,8 +208,8 @@ public class MainActivity extends AppCompatActivity {
         normal_icon = (Button)findViewById(R.id.icon_normal);
         follow_icon = (Button)findViewById(R.id.icon_follow);
         personList = (Button) findViewById(R.id.person_icon);
-        searchContent = (EditText) findViewById(R.id.search_text);
-        search = (Button) findViewById(R.id.search_icon);
+//        searchContent = (EditText) findViewById(R.id.search_text);
+//        search = (Button) findViewById(R.id.search_icon);
         navigationView = (NavigationView) findViewById(R.id.nav_view);
         mDrawerLayout = (DrawerLayout) findViewById(R.id.main_drawer_layout);
         mMapView = (MapView) findViewById(R.id.bmapView);
@@ -346,6 +346,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this,NavigationActivity.class);
+                intent.putExtra("action","0");
                 startActivity(intent);
             }
         });
@@ -358,6 +359,7 @@ public class MainActivity extends AppCompatActivity {
                 mDrawerLayout.openDrawer(Gravity.LEFT);
             }
         });
+
         navigationView.setCheckedItem(R.id.scenery_icon);
         locationButton.setOnClickListener(new View.OnClickListener() {
             @Override

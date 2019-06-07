@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.CollapsingToolbarLayout;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -44,6 +45,14 @@ public class SpotConcreteActivity extends AppCompatActivity {
     private TextView spotInformationText;
     private BannerViewPager soptPager;
     private Integer[] imgArray= null;
+    private FloatingActionButton takeThereIcon;
+    private double spotLatitude;
+    private double spotLogitude;
+
+    private String spotName = new String() ;
+    private String spotId = new String();
+    private String spotText = new String() ;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,7 +67,7 @@ public class SpotConcreteActivity extends AppCompatActivity {
         String spotId = "1";
         String spotText = "东3教学楼一共五层，每层标配两间厕所与两间开水房，理工科专业课和英语相关课程多排在东3，教室间有小隔间可供同学们自习。 ";
         Integer[] imgIDArray ={R.drawable.east_3_1,R.drawable.east_3_2};
-        SpotInformation spotInformation = new SpotInformation(spotId,spotName,imgIDArray,spotText);
+        SpotInformation spotInformation = new SpotInformation(spotId,spotName,imgIDArray,spotText,26.0646793692,119.2042646576);
         spotInformationList.add(spotInformation);
     }
 
@@ -66,10 +75,6 @@ public class SpotConcreteActivity extends AppCompatActivity {
     {
         Intent intent = getIntent();
         spotid = intent.getStringExtra(SPOT_ID);//获取主页面传过来的id
-
-        String spotName = new String() ;
-        String spotId = new String();
-        String spotText = new String() ;
 
 
         for(SpotInformation spotInformation:spotInformationList)
@@ -83,8 +88,32 @@ public class SpotConcreteActivity extends AppCompatActivity {
                 spotId = spotInformation.getSpotID();
                 imgArray = spotInformation.getSpotImageID();
                 spotText = spotInformation.getSpotInformation();
+                spotLatitude = spotInformation.getSpotLatitude();
+                spotLogitude = spotInformation.getSpotLongitude();
             }
         }
+
+        takeThereIcon = (FloatingActionButton)findViewById(R.id.take_there_icon);
+        /**
+         * 点击去那里按钮，跳转进入路线规划界面
+         */
+        takeThereIcon.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(SpotConcreteActivity.this, NavigationActivity.class);
+                intent.putExtra("action","1");
+                intent.putExtra("latitude",spotLatitude);
+                intent.putExtra("logitude",spotLogitude);
+                intent.putExtra("spotName",spotName);
+                startActivity(intent);
+            }
+        });
+
+
+
+
+
+
 
         soptPager = (BannerViewPager) findViewById(R.id.spot_pager);
         toolbar = (Toolbar)findViewById(R.id.toolbar);
