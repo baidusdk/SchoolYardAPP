@@ -44,6 +44,7 @@ import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
+import com.baidu.mapapi.map.Text;
 import com.baidu.mapapi.model.LatLng;
 import com.baidu.mapapi.search.core.PoiInfo;
 import com.baidu.mapapi.search.core.RouteLine;
@@ -59,6 +60,7 @@ import com.baidu.mapapi.search.poi.PoiCitySearchOption;
 import com.baidu.mapapi.search.poi.PoiDetailResult;
 import com.baidu.mapapi.search.poi.PoiDetailSearchResult;
 import com.baidu.mapapi.search.poi.PoiIndoorResult;
+import com.baidu.mapapi.search.poi.PoiNearbySearchOption;
 import com.baidu.mapapi.search.poi.PoiResult;
 import com.baidu.mapapi.search.poi.PoiSearch;
 import com.baidu.mapapi.search.route.BikingRoutePlanOption;
@@ -100,15 +102,14 @@ import static android.view.View.GONE;
 import static com.hd.app.MainActivity.lastX;
 import static com.hd.app.MainActivity.nlocation;
 
-//import static com.hd.app.util.NavUtil.activityList;
 
 /**
- * Created by gaolei on 17/3/29.
+ * Created by Only_ZziTai on 17/3/29.
  */
 
 public class NavigationActivity extends BaseActivity implements OnGetGeoCoderResultListener,
         OnGetSuggestionResultListener, PoiSuggestionAdapter.OnItemClickListener
-        , PoiHistoryAdapter.OnHistoryItemClickListener,BaiduMap.OnMapClickListener, OnGetRoutePlanResultListener {
+        , PoiHistoryAdapter.OnHistoryItemClickListener, BaiduMap.OnMapClickListener, OnGetRoutePlanResultListener {
 
     /**
      * 地理编码,硬核解决骑行规划问题，辣鸡百度问题反馈
@@ -199,8 +200,6 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
     //骑行步行选择按钮
 
 
-
-
     private double mCurrentLantitude;
     private double mCurrentLongitude;
     private MyLocationConfiguration.LocationMode mCurrentMode = MyLocationConfiguration.LocationMode.NORMAL;
@@ -237,7 +236,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
     /**
      * 地图元素
      */
-    private MapView mMapView =null;
+    private MapView mMapView = null;
     BaiduMap mBaiduMap = null;
     private RouteLine routeLine;
     RoutePlanSearch mSearch = null;
@@ -251,8 +250,6 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
 
     private String beginLocation;
     private String endLocation;
-
-
     private List<RouteColloctionItem> routeList = new ArrayList<>();//路径链表
     private int listPoint = 0;
     private RouteLine route = null;
@@ -263,22 +260,21 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
      */
 
 
-    private static final String TAG = "NaigationActivity";
+    private static final String TAG = "navigationActivity";
     LinearLayout placeSearchLayout;
     RelativeLayout title_content_layout;
     EditText placeEdit;
-    TextView start_place_edit, destination_edit,searchButton;
+    TextView start_place_edit, destination_edit, searchButton;
     RecyclerView recyclerviewPoi, recyclerviewPoiHistory;
     private List<SuggestionResult.SuggestionInfo> suggestionInfoList;
     private SuggestionSearch mSuggestionSearch = null;
     PoiSuggestionAdapter sugAdapter;
     boolean firstSetAdapter = true, isStartPoi = true;
-    private PoiResult mPoiResult;
     String currentAddress, start_place, destination;
     LatLng startLL, endLL, tempLL;
-    PoiHistoryAdapter poiHistoryAdapter;
-    PoiSearch poiSearch;
-    List<PoiInfo> poiInfo;
+     PoiHistoryAdapter poiHistoryAdapter;
+     PoiSearch poiSearch;
+    private List<PoiInfo> poiInfo = new ArrayList<>();
 
 
     private String actionId = null;
@@ -323,8 +319,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
     }
 
 
-    private void setListener()
-    {
+    private void setListener() {
         returnIocn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -364,7 +359,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
                 bikeButton.setTextColor(getResources().getColor(R.color.white));
                 walkButton.setBackgroundResource(R.drawable.route_mode_walk_notselect);
                 walkButton.setTextColor(getResources().getColor(R.color.appBlue));
-                bikingRoutePlan(beginLocation,endLocation);
+                bikingRoutePlan(beginLocation, endLocation);
 
             }
         });
@@ -374,35 +369,11 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
                 isLocationSpot = false;
                 beginLocation = start_place_edit.getText().toString().trim();
                 endLocation = destination_edit.getText().toString().trim();
-                if(beginLocation.equals("我的位置"))
-                {
-
-                    isBegin = true;
-                    mCoder.geocode(new GeoCodeOption().city("福州").address(endLocation));
-                    LatLng p = new LatLng(nlocation.getLatitude(),nlocation.getLongitude());
-                    ReverseGeoCodeOption options = new ReverseGeoCodeOption().location(p);
-                    mCoder.reverseGeoCode(options);
-//                    beginName = myAddressName;
-//                    myAddressName = null;
-
-                }
-                if(endLocation.equals("我的位置"))
-                {
-                    isEnd=true;
-                    mCoder.geocode(new GeoCodeOption().city("福州").address(beginLocation));
-                    LatLng p = new LatLng(nlocation.getLatitude(),nlocation.getLongitude());
-                    ReverseGeoCodeOption options = new ReverseGeoCodeOption().location(p);
-                    mCoder.reverseGeoCode(options);
-//                    endName = myAddressName;
-//                    myAddressName = null;
-
-                }
                 if(beginLocation.isEmpty()||endLocation.isEmpty())
                 {
                     Toast.makeText(NavigationActivity.this,"起点和终点不能为空",Toast.LENGTH_SHORT).show();
                     return;
-                }
-                else {
+                } else {
                     routeMap.setVisibility(View.VISIBLE);
                     walkButton.setBackgroundResource(R.drawable.route_mode_walk_select);
                     walkButton.setTextColor(getResources().getColor(R.color.white));
@@ -417,16 +388,13 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
         chooseRouteLeft.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(listPoint>0)
-                {
+                if (listPoint > 0) {
                     listPoint--;
-                    chooseRouteText.setText("路线"+String.valueOf(listPoint+1));
+                    chooseRouteText.setText("路线" + String.valueOf(listPoint + 1));
                     RouteColloctionItem rt = routeList.get(listPoint);
-                    distanceText.setText(String.valueOf(rt.getDistance())+"米");
-                    costTimeText.setText(String.valueOf(rt.getTakeTime()/60)+"分钟");
-                }
-                else
-                {
+                    distanceText.setText(String.valueOf(rt.getDistance()) + "米");
+                    costTimeText.setText(String.valueOf(rt.getTakeTime() / 60) + "分钟");
+                } else {
                     return;
                 }
             }
@@ -434,16 +402,13 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
         chooseRouteRight.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(listPoint<routeList.size()-1)
-                {
+                if (listPoint < routeList.size() - 1) {
                     listPoint++;
-                    chooseRouteText.setText("路线"+String.valueOf(listPoint+1));
+                    chooseRouteText.setText("路线" + String.valueOf(listPoint + 1));
                     RouteColloctionItem rt = routeList.get(listPoint);
-                    distanceText.setText(String.valueOf(rt.getDistance())+"米");
-                    costTimeText.setText(String.valueOf(rt.getTakeTime()/60)+"分钟");
-                }
-                else
-                {
+                    distanceText.setText(String.valueOf(rt.getDistance()) + "米");
+                    costTimeText.setText(String.valueOf(rt.getTakeTime() / 60) + "分钟");
+                } else {
                     return;
                 }
             }
@@ -451,9 +416,8 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
         locationButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(nlocation!=null)
-                {
-                    if(nlocation!=null) {
+                if (nlocation != null) {
+                    if (nlocation != null) {
                         LatLng ll = new LatLng(nlocation.getLatitude(), nlocation.getLongitude());
                         MapStatusUpdate update = MapStatusUpdateFactory.newLatLng(ll);
                         mBaiduMap.animateMapStatus(update);
@@ -482,59 +446,6 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
      * 收藏路径，必须开线程
      */
 
-    private void doCollectRoute()
-    {
-        RouteColloctionItem rt = routeList.get(listPoint);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    ConnectTool connectTool = new ConnectTool();//建立连接
-                    String temp=connectTool.routeCollectRequest(rt);
-                    Log.d("登录标识", temp);
-                    JSONObject jsonObject = new JSONObject(temp);
-                    String s = jsonObject.getString("msg");
-                    if(s.equals("success"))
-                        Toast.makeText(NavigationActivity.this, "收藏成功", Toast.LENGTH_SHORT).show();
-                    else
-                    {
-                        Toast.makeText(NavigationActivity.this,"网络错误，收藏失败",Toast.LENGTH_SHORT).show();
-                    }
-                    Message message = new Message();
-                    message.what = Click_Collect_Route;
-                    handler.sendMessage(message);
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
-
-    }
-
-    /**
-     * 开子线程执行网络操作
-     */
-    private Handler handler = new Handler() {
-
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case Click_Collect_Route: {
-                }
-                default:
-                    break;
-            }
-        }
-    };
-
-
-
-
-
-
-
-
-
     private void init()
     {
 
@@ -544,32 +455,36 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
 
 
         returnIocn = (ImageView) findViewById(R.id.menu_icon);
-        routeMap = (RelativeLayout)findViewById(R.id.route_map);
-        routeCollectBox = (CheckBox)findViewById(R.id.collect_route_icon);
-        costTimeText = (TextView)findViewById(R.id.route_time_text);
-        distanceText = (TextView)findViewById(R.id.route_length_text);
-        routeInformCard =(LinearLayout) findViewById(R.id.route_inform_card);
-        cardHideButton = (Button)findViewById(R.id.hide_routecard_icon);
-        cardShowButton = (Button)findViewById(R.id.show_routecard_icon);
+        routeMap = (RelativeLayout) findViewById(R.id.route_map);
+        routeCollectBox = (CheckBox) findViewById(R.id.collect_route_icon);
+        costTimeText = (TextView) findViewById(R.id.route_time_text);
+        distanceText = (TextView) findViewById(R.id.route_length_text);
+        routeInformCard = (LinearLayout) findViewById(R.id.route_inform_card);
+        cardHideButton = (Button) findViewById(R.id.hide_routecard_icon);
+        cardShowButton = (Button) findViewById(R.id.show_routecard_icon);
 
         walkButton = (Button) findViewById(R.id.on_walk);
-        bikeButton = (Button)findViewById(R.id.on_bike);
+        bikeButton = (Button) findViewById(R.id.on_bike);
 
-        mMapView = (MapView)findViewById(R.id.bmapRView);
+        mMapView = (MapView) findViewById(R.id.bmapRView);
 
-        locationButton = (Button)findViewById(R.id.locotion_icon2);
+        locationButton = (Button) findViewById(R.id.locotion_icon2);
 
-        chooseRouteText = (TextView)findViewById(R.id.choose_route_text);
-        chooseRouteLeft = (Button)findViewById(R.id.route_left);
-        chooseRouteRight = (Button)findViewById(R.id.route_right);
+        chooseRouteText = (TextView) findViewById(R.id.choose_route_text);
+        chooseRouteLeft = (Button) findViewById(R.id.route_left);
+        chooseRouteRight = (Button) findViewById(R.id.route_right);
 
-        searchButton = (TextView)findViewById(R.id.book_bt);
+        //searchButton = (TextView)findViewById(R.id.book_bt);
         currentAddress = LocationManager.getInstance().getAddress();
         placeSearchLayout = findViewById(R.id.place_search_layout);
         title_content_layout = (RelativeLayout) findViewById(R.id.title_content_layout);
         start_place_edit = (TextView) findViewById(R.id.start_place_edit);
         destination_edit = (TextView) findViewById(R.id.destination_edit);
+        searchButton = (TextView) findViewById(R.id.book_bt);
         placeEdit = (EditText) findViewById(R.id.place_edit);
+        /**
+         * recycle 初始化
+         */
         recyclerviewPoi = findViewById(R.id.recyclerview_poi);
         recyclerviewPoi.setLayoutManager(new LinearLayoutManager(this));
         recyclerviewPoi.addItemDecoration(new RecyclerViewDivider(
@@ -580,12 +495,13 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
         recyclerviewPoiHistory.addItemDecoration(new RecyclerViewDivider(
                 this, LinearLayoutManager.HORIZONTAL, 1,
                 ContextCompat.getColor(this, R.color.color_c8cacc)));
-
+        poiHistoryAdapter = new PoiHistoryAdapter(NavigationActivity.this, poiInfo);
+        recyclerviewPoiHistory.setAdapter(poiHistoryAdapter);
+        poiHistoryAdapter.setOnClickListener(this);
     }
 
 
-    private void initMap()
-    {
+    private void initMap() {
         //可通过options设置地图状态
         BaiduMapOptions options = new BaiduMapOptions();
         MapView mapView = new MapView(this, options);
@@ -603,7 +519,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
         // 开启定位图层，一定不要少了这句，否则对在地图的设置、绘制定位点将无效
         mBaiduMap.setMyLocationEnabled(true); //定位初始化
         //mBaiduMap.setIndoorEnable(true);//打开室内图
-        myLocationConfiguration = new MyLocationConfiguration(mCurrentMode,true,null);
+        myLocationConfiguration = new MyLocationConfiguration(mCurrentMode, true, null);
         mBaiduMap.setMyLocationConfiguration(myLocationConfiguration);
         mLocationClient = new LocationClient(getApplicationContext());
         //通过LocationClientOption设置LocationClient相关参数
@@ -617,18 +533,13 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
         mLocationClient.setLocOption(option);
 
         //注册LocationListener监听器
-        Log.d("定位测试","执行过这里");
+        Log.d("定位测试", "执行过这里");
         NavigationActivity.MyLocationListener myLocationListener = new NavigationActivity.MyLocationListener();
         mLocationClient.registerLocationListener(myLocationListener);
         //开启地图定位图层
         mLocationClient.start();
         // 初始化传感器
     }
-
-
-
-
-
 
 
     public void getSensorManager() {
@@ -644,7 +555,6 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
         magneticFieldSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
 
 
-
     }
 
 
@@ -655,10 +565,10 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
     SensorEventListener listener = new SensorEventListener() {
         @Override
         public void onSensorChanged(SensorEvent event) {
-            if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER){
+            if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
                 //这里是对象,需要克隆一份,否则共用一份数据
                 accelerometerValues = event.values.clone();
-            }else if(event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD){
+            } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
                 //这里是对象,需要克隆一份,否则共用一份数据
                 magneticValues = event.values.clone();
             }
@@ -669,19 +579,19 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
              * gravity:加速度传感器数据
              * geomagnetic:地磁传感器数据
              */
-            SensorManager.getRotationMatrix(r,null,accelerometerValues,magneticValues);
+            SensorManager.getRotationMatrix(r, null, accelerometerValues, magneticValues);
             /**
              * R:旋转数组
              * values :模拟方向传感器的数据
              */
-            sensorManager.getOrientation(r,values);
-            double mXDirection =  Math.toDegrees(values[0]);
-            if(Math.abs(mXDirection - lastX)>1.0) {
-                mCurrentDirection = (int)mXDirection;
+            sensorManager.getOrientation(r, values);
+            double mXDirection = Math.toDegrees(values[0]);
+            if (Math.abs(mXDirection - lastX) > 1.0) {
+                mCurrentDirection = (int) mXDirection;
                 MyLocationData locData = new MyLocationData.Builder()
                         .accuracy(mCurrentAccracy)
                         // 此处设置开发者获取到的方向信息，顺时针0-360
-                        .direction( mCurrentDirection ).latitude(mCurrentLantitude)
+                        .direction(mCurrentDirection).latitude(mCurrentLantitude)
                         .longitude(mCurrentLongitude).build();
 
                 mBaiduMap.setMyLocationData(locData);
@@ -697,7 +607,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
     };
 
 
-    private void walkingRoutePlan(String begin,String end){
+    private void walkingRoutePlan(String begin, String end) {
         mBaiduMap.clear();
         PlanNode stNode = null;
         PlanNode enNode = null;
@@ -775,7 +685,6 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
     }
 
 
-
     @Override
     public void onMapClick(LatLng latLng) {
 
@@ -788,6 +697,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
 
     /**
      * 步行路线回调函数
+     *
      * @param result
      */
     @Override
@@ -824,10 +734,9 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
             routeCollectBox.setChecked(false);//默认未收藏
             Log.d("aaaaaab",String.valueOf(result.getRouteLines().size()) );
             if (result.getRouteLines().size() > 1) {
-                Toast.makeText(NavigationActivity.this,"找到合适步行路径"+String.valueOf(result.getRouteLines().size())+"条",Toast.LENGTH_SHORT).show();
+                Toast.makeText(NavigationActivity.this, "找到合适步行路径" + String.valueOf(result.getRouteLines().size()) + "条", Toast.LENGTH_SHORT).show();
 
-                for(int i = 0;i<result.getRouteLines().size();i++)
-                {
+                for (int i = 0; i < result.getRouteLines().size(); i++) {
                     route = result.getRouteLines().get(i);
                     Date dt = new Date();
                     double bla = route.getStarting().getLocation().latitude;
@@ -849,8 +758,8 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
                 }
                 route = result.getRouteLines().get(0);
                 chooseRouteText.setText("路径1");
-                costTimeText.setText(String.valueOf(route.getDuration()/60)+"分钟");
-                distanceText.setText(String.valueOf(route.getDistance())+"米");
+                costTimeText.setText(String.valueOf(route.getDuration() / 60) + "分钟");
+                distanceText.setText(String.valueOf(route.getDistance()) + "米");
                 WalkingRouteOverlay overlay = new WalkingRouteOverlay(mBaiduMap);
                 mBaiduMap.setOnMarkerClickListener(overlay);
                 routeOverlay = overlay;
@@ -860,7 +769,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
             } else if (result.getRouteLines().size() == 1) {
                 // 直接显示
 
-                Toast.makeText(NavigationActivity.this,"找到合适步行路径1条",Toast.LENGTH_SHORT).show();
+                Toast.makeText(NavigationActivity.this, "找到合适步行路径1条", Toast.LENGTH_SHORT).show();
                 route = result.getRouteLines().get(0);
                 Date dt = new Date();
                 double bla = route.getStarting().getLocation().latitude;
@@ -889,18 +798,18 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
                 Log.d("终点经度", String.valueOf(blo));
 
                 chooseRouteText.setText("路径1");
-                costTimeText.setText(String.valueOf(route.getDuration()/60)+"分钟");
-                distanceText.setText(String.valueOf(route.getDistance())+"米");
+                costTimeText.setText(String.valueOf(route.getDuration() / 60) + "分钟");
+                distanceText.setText(String.valueOf(route.getDistance()) + "米");
                 WalkingRouteOverlay overlay = new WalkingRouteOverlay(mBaiduMap);
                 mBaiduMap.setOnMarkerClickListener(overlay);
                 routeOverlay = overlay;
                 overlay.setData(result.getRouteLines().get(0));
                 overlay.addToMap();
                 overlay.zoomToSpan();
-                Log.d("步行规划", String.valueOf(route.getDuration()/60));
+                Log.d("步行规划", String.valueOf(route.getDuration() / 60));
 
             } else {
-                Toast.makeText(NavigationActivity.this,"未找到合适步行路径",Toast.LENGTH_SHORT).show();
+                Toast.makeText(NavigationActivity.this, "未找到合适步行路径", Toast.LENGTH_SHORT).show();
                 Log.d("route result", "结果数<0");
             }
 
@@ -910,6 +819,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
 
     /**
      * 骑行路线回调函数
+     *
      * @param
      */
     @Override
@@ -938,7 +848,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
             routeCollectBox.setChecked(false);//默认未收藏
 //
             if (result.getRouteLines().size() > 1) {
-                Toast.makeText(NavigationActivity.this,"找到合适骑行路径"+String.valueOf(result.getRouteLines().size())+"条",Toast.LENGTH_SHORT).show();
+                Toast.makeText(NavigationActivity.this, "找到合适骑行路径" + String.valueOf(result.getRouteLines().size()) + "条", Toast.LENGTH_SHORT).show();
 
                 for (int i = 0; i < result.getRouteLines().size(); i++) {
 
@@ -973,7 +883,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
                 overlay.zoomToSpan();
 
             } else if (result.getRouteLines().size() == 1) {
-                Toast.makeText(NavigationActivity.this,"找到合适骑行路径1条",Toast.LENGTH_SHORT).show();
+                Toast.makeText(NavigationActivity.this, "找到合适骑行路径1条", Toast.LENGTH_SHORT).show();
                 route = result.getRouteLines().get(0);
                 Date dt = new Date();
                 double bla = route.getStarting().getLocation().latitude;
@@ -1000,9 +910,9 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
                 overlay.zoomToSpan();
 //                mBtnPre.setVisibility(View.VISIBLE);
 //                mBtnNext.setVisibility(View.VISIBLE);
-                Log.d("骑行规划",String.valueOf(route.getDuration()/60));
+                Log.d("骑行规划", String.valueOf(route.getDuration() / 60));
             } else {
-                Toast.makeText(NavigationActivity.this,"未找到合适骑行路径",Toast.LENGTH_SHORT).show();
+                Toast.makeText(NavigationActivity.this, "未找到合适骑行路径", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -1031,7 +941,6 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
     }
 
 
-
     public void switchPoi(View view) {
         tempLL = startLL;
         startLL = endLL;
@@ -1040,7 +949,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
         destination = destination_edit.getText().toString();
         destination_edit.setText(start_place);
         start_place_edit.setText(destination);
-        if (start_place_edit.getText().toString().equals(getString(R.string.input_destination))){
+        if (start_place_edit.getText().toString().equals(getString(R.string.input_destination))) {
             start_place_edit.setText(getString(R.string.input_start_place));
         }
 
@@ -1055,6 +964,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
         placeSearchLayout.setVisibility(View.VISIBLE);
         placeEdit.setHint(getString(R.string.input_start_place));
         isStartPoi = true;
+
         showHistoryPOI();
     }
 
@@ -1067,6 +977,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
         placeSearchLayout.setVisibility(View.VISIBLE);
         placeEdit.setHint(getString(R.string.input_destination));
         isStartPoi = false;
+
         showHistoryPOI();
     }
 
@@ -1074,8 +985,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
         setStatusBar();
         new Utils(this).hideIMM();
         placeEdit.setText("");
-        if (sugAdapter != null)
-        {
+        if (sugAdapter != null) {
             sugAdapter.changeData(null);
         }
         title_content_layout.setVisibility(View.VISIBLE);
@@ -1084,6 +994,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
 
     /**
      * 后退箭头的监听
+     *
      * @param keyCode
      * @param event
      * @return
@@ -1099,8 +1010,10 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
         }
         return super.onKeyDown(keyCode, event);
     }
+
     /**
      * 建议结果
+     *
      * @param res
      */
     @Override
@@ -1118,78 +1031,59 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
             //这里适配 很关键。from标识  起点/终点
             sugAdapter = new PoiSuggestionAdapter(this, suggestionInfoList, from);
             recyclerviewPoi.setAdapter(sugAdapter);
+            Log.d(TAG,"sugAdapter");
             sugAdapter.setOnClickListener(this);
             firstSetAdapter = false;
         } else {
             sugAdapter.changeData(suggestionInfoList);
         }
-   }
+    }
+
     /**
      * 展示历史记录
      */
     private void showHistoryPOI() {
-        try {
-            recyclerviewPoiHistory.setVisibility(View.VISIBLE);
-            //在history里展示各种列表吧
-            poiSearch.searchInCity(new PoiCitySearchOption().city("福州").keyword("福州"));
-            Log.d(TAG, "showHistoryPOI: "+poiInfo.get(0).getName());
-            List<PoiInfo> poiItems =poiInfo;
-             poiHistoryAdapter = new PoiHistoryAdapter(NavigationActivity.this, poiItems);
-            recyclerviewPoiHistory.setAdapter(poiHistoryAdapter);
-            poiHistoryAdapter.setOnClickListener(this);
-        } catch (Exception e) {
-            Log.d("gaolei", e.getMessage());
+        poiSearch.searchNearby(new PoiNearbySearchOption()
+                .location(new LatLng(26.055801, 119.197295)).radius(3000).keyword("福州大学教学楼"
+                ));
+        recyclerviewPoiHistory.setVisibility(View.VISIBLE);
 
+        if (recyclerviewPoiHistory.getAdapter()== null) {
+            Log.d(TAG, "no Adapter");
+        } else {
+            Log.d(TAG, "is Adapter"+poiInfo.size());
         }
+
     }
 
-    /**
-     * 点击开始导航
-     * @param view
-     */
-
-    public void startNavigation(View view) {
-        if (start_place_edit.getText().toString().equals(getString(R.string.my_position))){
-            startLL = LocationManager.getInstance().getCurrentLL();
-        }
-
-        if (startLL == null) {
-            Toast.makeText(this, getString(R.string.please_input_start_place), Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (endLL == null) {
-            Toast.makeText(this, getString(R.string.please_input_destination), Toast.LENGTH_SHORT).show();
-            return;
-        }
-    }
 
     @Override
     public void onItemClick(View v, int position, String flag, SuggestionResult.SuggestionInfo info) {
         if (isStartPoi) {
             start_place_edit.setText(info.key);
-   //         startLL = info.;
+            //         startLL = info.;
         } else {
             destination_edit.setText(info.key);
-    //        endLL = info.pt;
+            //        endLL = info.pt;
         }
         backFromSearchPlace(placeSearchLayout);
-        //providerUtil.addData(info.key,info.district, info.pt.latitude + "", info.pt.longitude + "");
     }
 
     /**
      * 设置历史记录点击项
+     *
      * @param v
-     * @param position   某项位置
-     * @param poiInfo   数据类型
+     * @param position 某项位置
+     * @param poiInfo  数据类型
      */
     @Override
     public void onHistoryItemClick(View v, int position, PoiInfo poiInfo) {
 
         if (isStartPoi) {
-           // startLL = new LatLng(Double.parseDouble(poiObject.lattitude), Double.parseDouble(poiObject.longitude));
+            // startLL = new LatLng(Double.parseDouble(poiObject.lattitude), Double.parseDouble(poiObject.longitude));
             start_place_edit.setText(poiInfo.getName());
         } else {
-           // endLL = new LatLng(Double.parseDouble(poiObject.lattitude), Double.parseDouble(poiObject.longitude));
+            // endLL = new LatLng(Double.parseDouble(poiObject.lattitude), Double.parseDouble(poiObject.longitude));
             destination_edit.setText(poiInfo.getName());
         }
         backFromSearchPlace(placeSearchLayout);
@@ -1198,20 +1092,23 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
     /**
      * 初始化POI监听
      */
-    private void initPoiListener(){
+    private void initPoiListener() {
         // 初始化建议搜索模块，注册建议搜索事件监听
         mSuggestionSearch = SuggestionSearch.newInstance();
         mSuggestionSearch.setOnGetSuggestionResultListener(this);
         poiSearch = PoiSearch.newInstance();
-        OnGetPoiSearchResultListener poiListener = new OnGetPoiSearchResultListener(){
+        OnGetPoiSearchResultListener poiListener = new OnGetPoiSearchResultListener() {
             @Override
             public void onGetPoiResult(PoiResult poiResult) {
-                poiInfo =poiResult.getAllPoi();
-
+                poiInfo = poiResult.getAllPoi();
+                poiHistoryAdapter.changeData(poiInfo);
+               Log.d(TAG,String.valueOf(poiInfo.size()));
             }
+
             @Override
             public void onGetPoiDetailResult(PoiDetailSearchResult poiDetailSearchResult) {
             }
+
             @Override
             public void onGetPoiDetailResult(PoiDetailResult poiDetailResult) {
                 if (poiDetailResult.error != SearchResult.ERRORNO.NO_ERROR) {
@@ -1223,6 +1120,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
                             Toast.LENGTH_LONG).show();
                 }
             }
+
             @Override
             public void onGetPoiIndoorResult(PoiIndoorResult poiIndoorResult) {
             }
@@ -1235,40 +1133,42 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
         placeEdit.addTextChangedListener(new TextWatcher() {
             @Override
             public void afterTextChanged(Editable arg0) {
-                Log.d("gaolei", "afterTextChanged--------------");
+                Log.d("Only_ZziTai", "afterTextChanged--------------");
 
             }
+
             @Override
             public void beforeTextChanged(CharSequence arg0, int arg1,
                                           int arg2, int arg3) {
-
-                Log.d("gaolei", "beforeTextChanged--------------");
+                Log.d("Only_ZziTai", "beforeTextChanged--------------");
             }
 
             @Override
             public void onTextChanged(CharSequence cs, int arg1, int arg2,
                                       int arg3) {
-                Log.d("gaolei", "onTextChanged--------------");
+                Log.d("Only_ZziTai", "onTextChanged--------------");
+
 
                 if (cs.length() <= 0) {
                     return;
                 }
                 String adds = placeEdit.getText().toString().trim();
-                Log.d("placeEdit",adds);
-                poiSearch.searchInCity(new PoiCitySearchOption().city("福州").keyword(adds));
+                adds = "福州大学" + adds;
+                Log.d("placeEdit", adds);
+
                 /**
                  * 使用建议搜索服务获取建议列表，结果在onSuggestionResult()中更新
                  */
                 mSuggestionSearch.requestSuggestion(
                         new SuggestionSearchOption()
-                                .keyword(cs.toString()).city(adds)
-
+                                .keyword("福州大学" + cs.toString()).city("福州市")
+                                .citylimit(true)
                 );
             }
         });
         placeEdit.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                Log.i("ABC","搜索操作执行:"+ placeEdit.getText());
+                Log.i("ABC", "搜索操作执行:" + placeEdit.getText());
                 if (isStartPoi) {
                     start_place_edit.setText(placeEdit.getText());
 
@@ -1277,7 +1177,6 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
 
                 }
                 backFromSearchPlace(placeSearchLayout);
-                //providerUtil.addData(info.key,info.district, info.pt.latitude + "", info.pt.longitude + "");
 
             }
             return false;
@@ -1285,9 +1184,8 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
     }
 
 
-
     public void onBackPressed(View view) {
-        Intent intent = new Intent(NavigationActivity.this,MainActivity.class);
+        Intent intent = new Intent(NavigationActivity.this, MainActivity.class);
         startActivity(intent);
         finish();
     }
@@ -1298,8 +1196,8 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
         mMapView.onPause();
         super.onPause();
 
-        sensorManager.unregisterListener(listener,accelerometerSensor);
-        sensorManager.unregisterListener(listener,magneticFieldSensor);
+        sensorManager.unregisterListener(listener, accelerometerSensor);
+        sensorManager.unregisterListener(listener, magneticFieldSensor);
 
 
     }
@@ -1308,8 +1206,8 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
     protected void onResume() {
         mMapView.onResume();
         super.onResume();
-        sensorManager.registerListener(listener,accelerometerSensor,SensorManager.SENSOR_DELAY_UI);
-        sensorManager.registerListener(listener,magneticFieldSensor,SensorManager.SENSOR_DELAY_UI);
+        sensorManager.registerListener(listener, accelerometerSensor, SensorManager.SENSOR_DELAY_UI);
+        sensorManager.registerListener(listener, magneticFieldSensor, SensorManager.SENSOR_DELAY_UI);
 
     }
 
@@ -1333,11 +1231,12 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
     public class MyLocationListener extends BDAbstractLocationListener {
 
         private boolean isFirstLocate = true;
+
         //定位模式
         //是否是第一次定位
         @Override
         public void onReceiveLocation(BDLocation location) {
-            if (location == null || mMapView == null){
+            if (location == null || mMapView == null) {
                 return;
             }
             //mapView 销毁后不在处理新接收的位置
@@ -1348,22 +1247,21 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
             MyLocationData locData = new MyLocationData.Builder()
                     .accuracy(mCurrentAccracy)
                     // 此处设置开发者获取到的方向信息，顺时针0-360
-                    .direction((int)lastX ).latitude(mCurrentLantitude)
+                    .direction((int) lastX).latitude(mCurrentLantitude)
                     .longitude(mCurrentLongitude).build();
             nlocation = location;
             mBaiduMap.setMyLocationData(locData);
 
-            if (location.getLocType()==BDLocation.TypeGpsLocation||location.getLocType()==BDLocation.TypeNetWorkLocation){
+            if (location.getLocType() == BDLocation.TypeGpsLocation || location.getLocType() == BDLocation.TypeNetWorkLocation) {
                 navigateTo(location);
                 return;
             }
 
         }
-        private void navigateTo(BDLocation location)
-        {
-            if(isFirstLocate)
-            {
-                LatLng ll = new LatLng(location.getLatitude(),location.getLongitude());
+
+        private void navigateTo(BDLocation location) {
+            if (isFirstLocate) {
+                LatLng ll = new LatLng(location.getLatitude(), location.getLongitude());
                 MapStatusUpdate update = MapStatusUpdateFactory.newLatLng(ll);
                 mBaiduMap.animateMapStatus(update);
                 update = MapStatusUpdateFactory.zoomTo(18f);
@@ -1373,8 +1271,6 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
 
         }
     }
-
-
 
 
 }
