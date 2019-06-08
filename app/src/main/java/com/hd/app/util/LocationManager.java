@@ -1,13 +1,7 @@
 package com.hd.app.util;
-
 import com.baidu.mapapi.model.LatLng;
 
-/**
- * Created by gaolei on 17/3/
- */
-
 public class LocationManager {
-
     LatLng currentLL;
     String address;
 

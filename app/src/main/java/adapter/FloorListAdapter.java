@@ -45,7 +45,7 @@ public class FloorListAdapter extends RecyclerView.Adapter<FloorListAdapter.View
     public ViewHolder onCreateViewHolder(ViewGroup parent,int viewType)
     {
          View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.floor_item,parent,false);
-         ViewHolder holder = new ViewHolder(view);
+         final ViewHolder holder = new ViewHolder(view);
          holder.floorIdText.setOnClickListener(new View.OnClickListener() {
              @Override
              public void onClick(View v) {
