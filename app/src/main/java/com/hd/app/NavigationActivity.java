@@ -44,7 +44,6 @@ import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
-import com.baidu.mapapi.map.Text;
 import com.baidu.mapapi.model.LatLng;
 import com.baidu.mapapi.search.core.PoiInfo;
 import com.baidu.mapapi.search.core.RouteLine;
@@ -56,7 +55,6 @@ import com.baidu.mapapi.search.geocode.OnGetGeoCoderResultListener;
 import com.baidu.mapapi.search.geocode.ReverseGeoCodeOption;
 import com.baidu.mapapi.search.geocode.ReverseGeoCodeResult;
 import com.baidu.mapapi.search.poi.OnGetPoiSearchResultListener;
-import com.baidu.mapapi.search.poi.PoiCitySearchOption;
 import com.baidu.mapapi.search.poi.PoiDetailResult;
 import com.baidu.mapapi.search.poi.PoiDetailSearchResult;
 import com.baidu.mapapi.search.poi.PoiIndoorResult;
@@ -369,11 +367,35 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
                 isLocationSpot = false;
                 beginLocation = start_place_edit.getText().toString().trim();
                 endLocation = destination_edit.getText().toString().trim();
-                if(beginLocation.isEmpty()||endLocation.isEmpty())
-                {
-                    Toast.makeText(NavigationActivity.this,"起点和终点不能为空",Toast.LENGTH_SHORT).show();
+                if(beginLocation.isEmpty()||endLocation.isEmpty()) {
+                    Toast.makeText(NavigationActivity.this, "起点和终点不能为空", Toast.LENGTH_SHORT).show();
                     return;
-                } else {
+                }
+                if(beginLocation.equals("我的位置"))
+                {
+
+                    isBegin = true;
+                    mCoder.geocode(new GeoCodeOption().city("福州").address(endLocation));
+                    LatLng p = new LatLng(nlocation.getLatitude(),nlocation.getLongitude());
+                    ReverseGeoCodeOption options = new ReverseGeoCodeOption().location(p);
+                    mCoder.reverseGeoCode(options);
+//                    beginName = myAddressName;
+//                    myAddressName = null;
+
+                }
+                if(endLocation.equals("我的位置"))
+                {
+                    isEnd=true;
+                    mCoder.geocode(new GeoCodeOption().city("福州").address(beginLocation));
+                    LatLng p = new LatLng(nlocation.getLatitude(),nlocation.getLongitude());
+                    ReverseGeoCodeOption options = new ReverseGeoCodeOption().location(p);
+                    mCoder.reverseGeoCode(options);
+//                    endName = myAddressName;
+//                    myAddressName = null;
+
+                }
+
+
                     routeMap.setVisibility(View.VISIBLE);
                     walkButton.setBackgroundResource(R.drawable.route_mode_walk_select);
                     walkButton.setTextColor(getResources().getColor(R.color.white));
@@ -381,7 +403,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
                     bikeButton.setTextColor(getResources().getColor(R.color.appBlue));
                     walkingRoutePlan(beginLocation, endLocation);
                     routeInformCard.setVisibility(View.VISIBLE);
-                }
+
 
             }
         });
@@ -445,6 +467,59 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
     /**
      * 收藏路径，必须开线程
      */
+
+    private void doCollectRoute()
+    {
+        RouteColloctionItem rt = routeList.get(listPoint);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    ConnectTool connectTool = new ConnectTool();//建立连接
+                    String temp=connectTool.routeCollectRequest(rt);
+                    Log.d("登录标识", temp);
+                    JSONObject jsonObject = new JSONObject(temp);
+                    String s = jsonObject.getString("msg");
+                    if(s.equals("success"))
+                        Toast.makeText(NavigationActivity.this, "收藏成功", Toast.LENGTH_SHORT).show();
+                    else
+                    {
+                        Toast.makeText(NavigationActivity.this,"网络错误，收藏失败",Toast.LENGTH_SHORT).show();
+                    }
+                    Message message = new Message();
+                    message.what = Click_Collect_Route;
+                    handler.sendMessage(message);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+
+    }
+
+    /**
+     * 开子线程执行网络操作
+     */
+    private Handler handler = new Handler() {
+
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case Click_Collect_Route: {
+                }
+                default:
+                    break;
+            }
+        }
+    };
+
+
+
+
+
+
+
+
 
     private void init()
     {
