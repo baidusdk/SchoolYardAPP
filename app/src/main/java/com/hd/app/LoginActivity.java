@@ -48,7 +48,7 @@ public class LoginActivity extends AppCompatActivity {
         initView();
         rememberPassword();
         sendUserInformation();
-        setListner();
+        setListener();
     }
 
     private void sendUserInformation() {
@@ -73,7 +73,7 @@ public class LoginActivity extends AppCompatActivity {
 
 
 
-    private void setListner() {
+    private void setListener() {
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
