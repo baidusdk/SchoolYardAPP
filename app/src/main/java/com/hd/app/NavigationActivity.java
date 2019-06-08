@@ -35,6 +35,12 @@ import com.baidu.location.BDAbstractLocationListener;
 import com.baidu.location.BDLocation;
 import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
+import com.baidu.mapapi.bikenavi.BikeNavigateHelper;
+import com.baidu.mapapi.bikenavi.adapter.IBEngineInitListener;
+import com.baidu.mapapi.bikenavi.adapter.IBRoutePlanListener;
+import com.baidu.mapapi.bikenavi.model.BikeRoutePlanError;
+import com.baidu.mapapi.bikenavi.params.BikeNaviLaunchParam;
+import com.baidu.mapapi.bikenavi.params.BikeRouteNodeInfo;
 import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BaiduMapOptions;
 import com.baidu.mapapi.map.MapPoi;
@@ -77,6 +83,12 @@ import com.baidu.mapapi.search.sug.OnGetSuggestionResultListener;
 import com.baidu.mapapi.search.sug.SuggestionResult;
 import com.baidu.mapapi.search.sug.SuggestionSearch;
 import com.baidu.mapapi.search.sug.SuggestionSearchOption;
+import com.baidu.mapapi.walknavi.WalkNavigateHelper;
+import com.baidu.mapapi.walknavi.adapter.IWEngineInitListener;
+import com.baidu.mapapi.walknavi.adapter.IWRoutePlanListener;
+import com.baidu.mapapi.walknavi.model.WalkRoutePlanError;
+import com.baidu.mapapi.walknavi.params.WalkNaviLaunchParam;
+import com.baidu.mapapi.walknavi.params.WalkRouteNodeInfo;
 import com.hd.app.adapter.PoiHistoryAdapter;
 import com.hd.app.adapter.PoiSuggestionAdapter;
 import com.hd.app.adapter.RecyclerViewDivider;
@@ -196,6 +208,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
     private Button chooseRouteLeft;
     private Button chooseRouteRight;
     //骑行步行选择按钮
+    private Button beginNavgation;//开始导航按钮
 
 
     private double mCurrentLantitude;
@@ -280,6 +293,15 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
     private double endLogitude;
 
     private boolean isLocationSpot = true;
+
+
+    /**
+     * 开始导航使用的变量
+     */
+    private boolean isWalk = false;
+    private boolean isBike = false;
+    private BikeNaviLaunchParam bikeParam;
+    private WalkNaviLaunchParam walkParam;
 
 
 
@@ -461,8 +483,138 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
 
             }
         });
+        beginNavgation.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(isWalk)
+                {
+
+                    LatLng startPt = new LatLng(routeList.get(listPoint).getBeginLatitude(),routeList.get(listPoint).getBeginLogitude());
+                    LatLng endPt = new LatLng(routeList.get(listPoint).getEndLatitude(),routeList.get(listPoint).getEndLogitude());
+                    WalkRouteNodeInfo walkStartNode = new WalkRouteNodeInfo();
+                    walkStartNode.setLocation(startPt);
+                    WalkRouteNodeInfo walkEndNode = new WalkRouteNodeInfo();
+                    walkEndNode.setLocation(endPt);
+                    walkParam = new WalkNaviLaunchParam().startNodeInfo(walkStartNode).endNodeInfo(walkEndNode);
+                    try {
+                        WalkNavigateHelper.getInstance().initNaviEngine(NavigationActivity.this, new IWEngineInitListener() {
+                            @Override
+                            public void engineInitSuccess() {
+                                Log.d(TAG, "WalkNavi engineInitSuccess");
+                                routePlanWithWalkParam();
+                            }
+
+                            @Override
+                            public void engineInitFail() {
+                                Log.d(TAG, "WalkNavi engineInitFail");
+                                WalkNavigateHelper.getInstance().unInitNaviEngine();
+                            }
+                        });
+                    } catch (Exception e) {
+                        Log.d(TAG, "startBikeNavi Exception");
+                        e.printStackTrace();
+                    }
+                    return;
+                }
+                if(isBike)
+                {
+
+                    LatLng startPt = new LatLng(routeList.get(listPoint).getBeginLatitude(),routeList.get(listPoint).getBeginLogitude());
+                    LatLng endPt = new LatLng(routeList.get(listPoint).getEndLatitude(),routeList.get(listPoint).getEndLogitude());
+                    BikeRouteNodeInfo bikeStartNode = new BikeRouteNodeInfo();
+                    bikeStartNode.setLocation(startPt);
+                    BikeRouteNodeInfo bikeEndNode = new BikeRouteNodeInfo();
+                    bikeEndNode.setLocation(endPt);
+                    bikeParam = new BikeNaviLaunchParam().startNodeInfo(bikeStartNode).endNodeInfo(bikeEndNode);
+                    try {
+                        BikeNavigateHelper.getInstance().initNaviEngine(NavigationActivity.this, new IBEngineInitListener() {
+                            @Override
+                            public void engineInitSuccess() {
+                                Log.d(TAG, "BikeNavi engineInitSuccess");
+                                routePlanWithBikeParam();
+                            }
+
+                            @Override
+                            public void engineInitFail() {
+                                Log.d(TAG, "BikeNavi engineInitFail");
+                                BikeNavigateHelper.getInstance().unInitNaviEngine();
+                            }
+                        });
+                    } catch (Exception e) {
+                        Log.d(TAG, "startBikeNavi Exception");
+                        e.printStackTrace();
+                    }
+                    return;
+                }
+            }
+        });
 
     }
+
+
+
+
+
+
+    /**
+     * 发起骑行导航算路
+     */
+    private void routePlanWithBikeParam() {
+        BikeNavigateHelper.getInstance().routePlanWithRouteNode(bikeParam, new IBRoutePlanListener() {
+            @Override
+            public void onRoutePlanStart() {
+                Log.d(TAG, "BikeNavi onRoutePlanStart");
+            }
+
+            @Override
+            public void onRoutePlanSuccess() {
+                Log.d(TAG, "BikeNavi onRoutePlanSuccess");
+                Intent intent = new Intent();
+                intent.setClass(NavigationActivity.this, BNaviGuideActivity.class);
+                startActivity(intent);
+            }
+
+            @Override
+            public void onRoutePlanFail(BikeRoutePlanError error) {
+                Log.d(TAG, "BikeNavi onRoutePlanFail");
+            }
+
+        });
+    }
+
+    /**
+     * 发起步行导航算路
+     */
+    private void routePlanWithWalkParam() {
+        WalkNavigateHelper.getInstance().routePlanWithRouteNode(walkParam, new IWRoutePlanListener() {
+            @Override
+            public void onRoutePlanStart() {
+                Log.d(TAG, "WalkNavi onRoutePlanStart");
+            }
+
+            @Override
+            public void onRoutePlanSuccess() {
+
+                Log.d(TAG, "onRoutePlanSuccess");
+
+                Intent intent = new Intent();
+                intent.setClass(NavigationActivity.this, WNaviGuideActivity.class);
+                startActivity(intent);
+
+            }
+
+            @Override
+            public void onRoutePlanFail(WalkRoutePlanError error) {
+                Log.d(TAG, "WalkNavi onRoutePlanFail");
+            }
+
+        });
+    }
+
+
+
+
+
 
     /**
      * 收藏路径，必须开线程
@@ -573,6 +725,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
         poiHistoryAdapter = new PoiHistoryAdapter(NavigationActivity.this, poiInfo);
         recyclerviewPoiHistory.setAdapter(poiHistoryAdapter);
         poiHistoryAdapter.setOnClickListener(this);
+        beginNavgation = (Button)findViewById(R.id.begin_guide_icon);
     }
 
 
@@ -683,6 +836,8 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
 
 
     private void walkingRoutePlan(String begin, String end) {
+        isBike = false;
+        isWalk =true;
         mBaiduMap.clear();
         PlanNode stNode = null;
         PlanNode enNode = null;
@@ -718,6 +873,8 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
 
     private void bikingRoutePlan(String begin,String end)
     {
+        isWalk = false;
+        isBike =true;
         Log.d("骑行路线规划", "bikingRoutePlan: "+end);
         mBaiduMap.clear();
         PlanNode stNode = null;
@@ -777,6 +934,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
      */
     @Override
     public void onGetWalkingRouteResult(WalkingRouteResult result) {
+
 
         routeList.clear();
 
