@@ -1,11 +1,14 @@
 package connect;
 
+import android.util.Log;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import module.RouteColloctionItem;
 import module.User;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -33,15 +36,17 @@ public class ConnectTool {
     }
 
 
-    String loginUrl;
-
     //登录使用的连接工具类
     public String login(User user)
     {
+
+        String loginUrl ="http://47.102.156.224/api/login";
+        Log.d("登录链接", loginUrl);
         try {
             String json=g.toJson(user);
             RequestBody body = RequestBody.create(JSON, json);
             Request request = new Request.Builder().url(loginUrl).post(body).build();
+           // Request request = new Request.Builder().url(loginUrl).build();
             Response response = client.newCall(request).execute();
             String temp=response.body().string();
             return temp;
@@ -51,13 +56,18 @@ public class ConnectTool {
         }
     }
 
+
     //登录使用的连接工具类
-    public String getSpotImformation(User user)
+    public String routeCollectRequest(RouteColloctionItem rtIcom)
     {
+
+        String rtCollectUrl ="http://radiant-brushlands-28284.herokuapp.com/api/login";
+
         try {
-            String json=g.toJson(user);
+            String json=g.toJson(rtIcom);
             RequestBody body = RequestBody.create(JSON, json);
-            Request request = new Request.Builder().url(loginUrl).post(body).build();
+            Request request = new Request.Builder().url(rtCollectUrl).post(body).build();
+            // Request request = new Request.Builder().url(loginUrl).build();
             Response response = client.newCall(request).execute();
             String temp=response.body().string();
             return temp;
@@ -66,5 +76,22 @@ public class ConnectTool {
             return null;
         }
     }
+
+
+//    //登录使用的连接工具类
+//    public String getSpotImformation(User user)
+//    {
+//        try {
+//            String json=g.toJson(user);
+//            RequestBody body = RequestBody.create(JSON, json);
+//            Request request = new Request.Builder().url(loginUrl).post(body).build();
+//            Response response = client.newCall(request).execute();
+//            String temp=response.body().string();
+//            return temp;
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            return null;
+//        }
+    //}
 
 }

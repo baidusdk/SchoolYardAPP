@@ -11,14 +11,64 @@ public class RouteColloctionItem {
     private String endLocation;//终点
     private int takeTime;//花费时间
     private int distance;//距离
+    private String userAccount;//用户ID，作为后端读取的依据
+    private double beginLatitude;//起点纬度
+    private double beginLogitude;//起点经度
+    private double endLatitude;//终点纬度
+    private double endLogitude;//终点经度
 
-    public RouteColloctionItem(String mode, String time, String beginLocation, String endLocation, int takeTime, int distance) {
+    public String getUserAccount() {
+        return userAccount;
+    }
+
+    public void setUserAccount(String userAccount) {
+        this.userAccount = userAccount;
+    }
+
+    public double getBeginLatitude() {
+        return beginLatitude;
+    }
+
+    public void setBeginLatitude(double beginLatitude) {
+        this.beginLatitude = beginLatitude;
+    }
+
+    public double getBeginLogitude() {
+        return beginLogitude;
+    }
+
+    public void setBeginLogitude(double beginLogitude) {
+        this.beginLogitude = beginLogitude;
+    }
+
+    public double getEndLatitude() {
+        return endLatitude;
+    }
+
+    public void setEndLatitude(double endLatitude) {
+        this.endLatitude = endLatitude;
+    }
+
+    public double getEndLogitude() {
+        return endLogitude;
+    }
+
+    public void setEndLogitude(double endLogitude) {
+        this.endLogitude = endLogitude;
+    }
+
+    public RouteColloctionItem(String uAc, String mode, String time, String beginLocation, String endLocation, int takeTime, int distance, double bla, double blo, double ela, double elo) {
+        this.userAccount = uAc;
         this.mode = mode;
         this.time = time;
         this.beginLocation = beginLocation;
         this.endLocation = endLocation;
         this.takeTime = takeTime;
         this.distance = distance;
+        this.beginLatitude = bla;
+        this.beginLogitude = blo;
+        this.endLogitude = elo;
+        this.endLatitude = ela;
     }
 
     public void setMode(String mode) {
