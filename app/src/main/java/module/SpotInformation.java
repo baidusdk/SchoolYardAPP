@@ -10,7 +10,26 @@ public class SpotInformation {
     private String spotName;
     private Integer[] spotImageID;
     private String spotInformation;
-    public SpotInformation(String id,String name,Integer [] arrry,String sIn)
+    private double spotLatitude;
+    private double spotLongitude;
+
+    public double getSpotLatitude() {
+        return spotLatitude;
+    }
+
+    public void setSpotLatitude(double spotLatitude) {
+        this.spotLatitude = spotLatitude;
+    }
+
+    public double getSpotLongitude() {
+        return spotLongitude;
+    }
+
+    public void setSpotLongitude(double spotLongitude) {
+        this.spotLongitude = spotLongitude;
+    }
+
+    public SpotInformation(String id, String name, Integer [] arrry, String sIn, double la, double lo)
     {
         this.spotID = id;
         this.spotName = name;
@@ -24,6 +43,8 @@ public class SpotInformation {
             Log.d("tttttt", s);
         }
         this.spotInformation = sIn;
+        this.spotLatitude = la;
+        this.spotLongitude = lo;
     }
     public Integer[] getSpotImageID()
     {

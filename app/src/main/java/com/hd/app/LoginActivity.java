@@ -1,11 +1,11 @@
 package com.hd.app;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -38,7 +38,7 @@ public class LoginActivity extends AppCompatActivity {
         passwordEdit = (EditText)findViewById(R.id.password);
         rememberPwd =(CheckBox)findViewById(R.id.remember_pwd_box);
         visitorLogin = (TextView)findViewById(R.id.visitor_login);
-        pref = PreferenceManager.getDefaultSharedPreferences(this);
+        pref = getSharedPreferences("user", Context.MODE_PRIVATE);
     }
 
     @Override
@@ -106,11 +106,21 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void run() {
                 try {
+                    state = 0;
 
 //                    ConnectTool connectTool = new ConnectTool();
-//                    user=connectTool.login(user);
-//                    if(!user.getAccount().isEmpty())
-                    state = 0;//服务器端返回的账户不是空值
+//                    String temp=connectTool.login(user);
+//                    Log.d("登录标识", temp);
+//                    JSONObject jsonObject = new JSONObject(temp);
+//                    String s = jsonObject.getString("msg");
+//
+//
+//                    if(s.equals("success"))
+//                    state = 0;//服务器端返回成功
+//                    else
+//                    {
+//                        state = 1;
+//                    }
                     Message message = new Message();
                     message.what = Click_Login;
                     handler.sendMessage(message);
