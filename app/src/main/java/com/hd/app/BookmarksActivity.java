@@ -8,6 +8,8 @@ package com.hd.app;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -20,6 +22,7 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 
@@ -42,13 +45,21 @@ import okhttp3.Response;
 public class BookmarksActivity extends AppCompatActivity {
     private MyAdapter adapter;
     //尚未设置  等待填入
-    private String URL = "http://47.102.156.224/api/favorites";
+    private String UrlGetFavorites = "http://47.102.156.224/api/favorites";
+    private String UrlDeleteFavorites = "http://47.102.156.224/api/favorites/delete";
+    private String URL;
     private int httpCode;
     private String responseData;
+    private SharedPreferences pref;//用于获取user信息
+    //用户名
+    private String account;
     private RecyclerView mRecyclerView;
     //路径ID  全部String
     //个数
     private int intRecordNumber;
+
+
+    private int deleteFavoriteId ;
     //json数组
     private String record;
 
@@ -105,7 +116,7 @@ public class BookmarksActivity extends AppCompatActivity {
             }
         });
         //发送POST
-        sendRequestWithOkHttp();
+        sendRequestWithOkHttp(true);
         //解析post后的东西
 //        parseJSONWithJSONObject(responseData);
 ////实例化MyAdapter并传入mList对象
@@ -123,19 +134,21 @@ public class BookmarksActivity extends AppCompatActivity {
         protected String markTime;
         protected String wayOfVehicle;
         protected int distance;
+        protected int favoriteId;
 
 
         /**
          * 构造函数，一个卡片内信息展示如下
          */
 
-        public ContactInfo(String destination, String departName, int useTime, String markTime, String wayOfVehicle, int distance) {
+        public ContactInfo(String destination, String departName, int useTime, String markTime, String wayOfVehicle, int distance,int favoriteId) {
         this.departName = departName;
         this.destination = destination;
         this.distance = distance;
         this.useTime = useTime;
         this.markTime = markTime;
         this.wayOfVehicle = wayOfVehicle;
+        this.favoriteId=favoriteId;
     }
 }
 
@@ -183,17 +196,24 @@ public class BookmarksActivity extends AppCompatActivity {
             //耗时
             holder.vUseTime.setText(ci.useTime + "分钟");
 //            //出发地
-           holder.vDepart.setText(ci.departName);
+            holder.vDepart.setText(ci.departName);
 //            //目的地
             holder.vDestination.setText(ci.destination);
 //            //时间戳
-           holder.vTime.setText(ci.markTime);
-           holder.vDistance.setText(ci.distance+"米");
+            holder.vTime.setText(ci.markTime);
+
+            holder.vDistance.setText(ci.distance+"米");
             //设置删除按钮监听事件
             holder.iDelete.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    
+                    deleteFavoriteId=ci.favoriteId;
+                    Log.d("deleteFavoriteId",String.valueOf(deleteFavoriteId));
+                    sendRequestWithOkHttp(false);
+                    mList.remove(position);
+                    Log.d("delete按钮",mList.toString());
+                    notifyItemRemoved(position);
+                    notifyDataSetChanged();
                 }
             });
             /**
@@ -202,7 +222,6 @@ public class BookmarksActivity extends AppCompatActivity {
             holder.mRelativeLayout.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    ContactInfo ci = contactInfoList.get(position);
                     int realPosition = intRecordNumber-position-1;
                     Intent intent = new Intent(BookmarksActivity.this, NavigationActivity.class);
                     intent.putExtra("action","2");
@@ -264,7 +283,7 @@ public class BookmarksActivity extends AppCompatActivity {
          * 初始化
          */
         for (int i = intRecordNumber - 1; i >= 0; i--) {
-            elementArray[i] = new ContactInfo(destinationNameArray[i], departNameArray[i], useTimeArray[i], markTimeArray[i], wayOfVehicleArray[i], distanceArray[i]);
+            elementArray[i] = new ContactInfo(destinationNameArray[i], departNameArray[i], useTimeArray[i], markTimeArray[i], wayOfVehicleArray[i], distanceArray[i],favoriteIdArray[i]);
             mList.add(elementArray[i]);
 
         }
@@ -287,6 +306,9 @@ public class BookmarksActivity extends AppCompatActivity {
                 accountId = jsonObject1.getString("account");
                 Log.d("accountId",jsonObject.getString("data"));
                 intRecordNumber = jsonObject1.getInt("recordNum");
+                    Log.d("recordnum",String.valueOf(jsonObject1.getInt("recordNum")));
+
+
                 record = jsonObject1.getString("record");
                 /**
                  * 开数组,讲json内容读入
@@ -334,64 +356,82 @@ public class BookmarksActivity extends AppCompatActivity {
      * 参数
      * 返回值：无
      */
-    private void sendRequestWithOkHttp() {
+    private void sendRequestWithOkHttp(boolean isGetUrl) {
 
         try {
+            pref = getSharedPreferences("user", Context.MODE_PRIVATE);
+            account = pref.getString("account", "");
             //读取用户ID和token
-           // SharedPreferences pref = getSharedPreferences("user", MODE_PRIVATE);
-           //  String user_id = pref.getString("id", "0");
-            String account = "031602313";
+            // SharedPreferences pref = getSharedPreferences("user", MODE_PRIVATE);
+            //  String user_id = pref.getString("id", "0");
             //  String token = pref.getString("token", "0");//没有token 待删。
-            Log.d("userId:", account);
             //  Log.d("token:", token);
             User user = new User();
             user.setUser_id(account);
             //user.setToken(token);
+            if (!isGetUrl) {
+                user.setFavoriteId(deleteFavoriteId);
+            }
             OkHttpClient client = new OkHttpClient();
             Gson gson = new Gson();
             String toJson = gson.toJson(user);//转换json
-            Log.d("JSON", toJson);
+            if (isGetUrl) {
+                URL = UrlGetFavorites;
+            } else {
+                URL = UrlDeleteFavorites;
+            }
             RequestBody requestBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), toJson);
             Request request = new Request.Builder()
                     .url(URL)
                     .post(requestBody)
                     .build();
-            client.newCall(request).enqueue(new Callback() {
-                @Override
-                public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                    Log.d("onFailure", "fail");
-                }
 
-                /**
-                 * 获取6个内容。
-                 * @param call
-                 * @param response
-                 * @throws IOException
-                 */
-                @Override
-                public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                    //异步回调，获取内容
-                    responseData = response.body().string();
-                    httpCode = response.code();
-                    parseJSONWithJSONObject(responseData);
-                    //实例化MyAdapter并传入mList对象
-                    initInfo();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            adapter.addData(mList);
+                client.newCall(request).enqueue(new Callback() {
+                    @Override
+                    public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                        Log.d("onFailure", "fail");
+                    }
+
+                    /**
+                     * 获取6个内容。
+                     *
+                     * @param call
+                     * @param response
+                     * @throws IOException
+                     */
+                    @Override
+                    public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                        //异步回调，获取内容
+                        responseData = response.body().string();
+                        httpCode = response.code();
+                        Log.d("httpcode",String.valueOf(httpCode));
+                        if (isGetUrl) {
+                            parseJSONWithJSONObject(responseData);
+
+                        //实例化MyAdapter并传入mList对象
+                        initInfo();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if(intRecordNumber==0){
+                                    Toast.makeText(BookmarksActivity.this,"收藏夹空空如也",Toast.LENGTH_LONG).show();
+                                }
+                                adapter.addData(mList);
+                            }
+                        });
                         }
-                    });
-                }
-            });
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+                    }
+                });
 
+            } catch(Exception e){
+                e.printStackTrace();
+            }
+
+        }
 
     public class User {
-        private String account;
+        private String account=null;
+        private int favoriteId;
 //        private String token;
 //
 //        public String getToken() {
@@ -402,13 +442,15 @@ public class BookmarksActivity extends AppCompatActivity {
 //        public void setToken(String token) {
 //            this.token = token;
 //        }
-
         public String getUser_id() {
             return account;
         }
-
+        public int getFavoriteId(){return favoriteId;}
         public void setUser_id(String user_id) {
             this.account = user_id;
         }
+        public void setFavoriteId(int favoriteId){this.favoriteId=favoriteId;}
     }
+
+
 }

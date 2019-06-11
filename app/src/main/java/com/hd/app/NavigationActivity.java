@@ -1311,7 +1311,6 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
             return;
         }
 
-        Log.d(TAG, "onGetSuggestionResult" + res.getAllSuggestions());
         recyclerviewPoiHistory.setVisibility(View.GONE);
         suggestionInfoList = res.getAllSuggestions();
         if (firstSetAdapter) {
