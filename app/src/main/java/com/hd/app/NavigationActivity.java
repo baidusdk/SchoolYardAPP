@@ -310,7 +310,14 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_navigation);
         setStatusBar();
+<<<<<<< HEAD
         init();
+=======
+        initConfig();
+        initPermission();
+        //intiNavEnigne();
+        initTTs();
+>>>>>>> master
         initMap();
         mCoder = GeoCoder.newInstance();
         mCoder.setOnGetGeoCodeResultListener(this);
@@ -914,6 +921,12 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
         }
         mSearch.bikingSearch((new BikingRoutePlanOption().ridingType(0))
                 .from(stNode).to(enNode));
+<<<<<<< HEAD
+=======
+        speak("百度导航为您服务");
+
+       //mNaviHelper.startBikeNavi(NavigationActivity.this);
+>>>>>>> master
     }
 
 

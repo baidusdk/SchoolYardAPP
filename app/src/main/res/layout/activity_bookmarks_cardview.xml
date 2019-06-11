@@ -67,7 +67,7 @@
         <TextView
             android:id="@+id/tv_time"
             android:layout_width="wrap_content"
-            android:layout_height="20dp"
+            android:layout_height="35dp"
             android:layout_marginLeft="200dp"
             android:layout_below="@id/iv_destination"
             android:padding="3dp"
@@ -121,7 +121,7 @@
             android:layout_marginEnd="8dp"
             android:layout_marginTop="10dp"
             android:src="@drawable/depart"
-            android:layout_below="@+id/tv_vehicle"/>
+            android:layout_below="@+id/yellow_image"/>
         <ImageView
             android:id="@+id/iv_destination"
             android:layout_width="40dp"
