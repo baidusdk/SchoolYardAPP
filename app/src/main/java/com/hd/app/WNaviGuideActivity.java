@@ -3,6 +3,7 @@
  */
 package com.hd.app;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
@@ -10,10 +11,13 @@ import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
+import com.baidu.mapapi.bikenavi.BikeNavigateHelper;
 import com.baidu.mapapi.walknavi.WalkNavigateHelper;
 import com.baidu.mapapi.walknavi.adapter.IWNaviStatusListener;
 import com.baidu.mapapi.walknavi.adapter.IWRouteGuidanceListener;
@@ -31,13 +35,14 @@ import com.hd.app.listener.UiMessageListener;
 import com.hd.app.util.AutoCheck;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 
 public class WNaviGuideActivity extends Activity {
 
-    private final static String TAG = WNaviGuideActivity.class.getSimpleName();
+    private final static String TAG ="WNaviGuideActivity";
 
     private WalkNavigateHelper mNaviHelper;
 
@@ -78,6 +83,8 @@ public class WNaviGuideActivity extends Activity {
     protected void onDestroy() {
         super.onDestroy();
         mNaviHelper.quit();
+        mSpeechSynthesizer.release();
+        mSpeechSynthesizer = null;
     }
 
     @Override
@@ -95,8 +102,21 @@ public class WNaviGuideActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        initPermission();
         mNaviHelper = WalkNavigateHelper.getInstance();
+        mainHandler = new Handler() {
+            /*
+             * @param msg
+             */
+            @Override
+            public void handleMessage(Message msg) {
+                super.handleMessage(msg);
+                if (msg.obj != null) {
+                    Log.d(TAG,msg.obj.toString());
+                }
+            }
+
+        };
         initTTs();
 
         try {
@@ -211,12 +231,31 @@ public class WNaviGuideActivity extends Activity {
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == ArCameraView.WALK_AR_PERMISSION) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_DENIED) {
-                Toast.makeText(WNaviGuideActivity.this, "没有相机权限,请打开后重试", Toast.LENGTH_SHORT).show();
-            } else if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                mNaviHelper.startCameraAndSetMapView(WNaviGuideActivity.this);
+//        if (requestCode == ArCameraView.WALK_AR_PERMISSION) {
+//            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_DENIED) {
+//                Toast.makeText(WNaviGuideActivity.this, "没有相机权限,请打开后重试", Toast.LENGTH_SHORT).show();
+//            } else if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+//                mNaviHelper.startCameraAndSetMapView(WNaviGuideActivity.this);
+//            }
+//        }
+        switch (requestCode) {
+            case 1: {
+                if (grantResults.length > 0) {
+                    for (int result : grantResults) {
+                        if (result != PackageManager.PERMISSION_GRANTED) {
+                            Toast.makeText(this, "必须要同意以上所有权限才能正常使用app", Toast.LENGTH_SHORT).show();
+                            finish();
+                            return;
+                        }
+
+                    }
+                } else {
+                    Toast.makeText(this, "未知错误", Toast.LENGTH_SHORT).show();
+                    finish();
+                }
+                break;
             }
+            default:
         }
     }
 
@@ -224,7 +263,32 @@ public class WNaviGuideActivity extends Activity {
      * 初始化Tts引擎
      */
 
+    private void initPermission() {
+        String[] permissions = {
+                Manifest.permission.INTERNET,
+                Manifest.permission.ACCESS_NETWORK_STATE,
+                Manifest.permission.MODIFY_AUDIO_SETTINGS,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_SETTINGS,
+                Manifest.permission.READ_PHONE_STATE,
+                Manifest.permission.ACCESS_WIFI_STATE,
+                Manifest.permission.CHANGE_WIFI_STATE
+        };
 
+        ArrayList<String> toApplyList = new ArrayList<String>();
+
+        for (String perm : permissions) {
+            if (PackageManager.PERMISSION_GRANTED != ContextCompat.checkSelfPermission(this, perm)) {
+                toApplyList.add(perm);
+                // 进入到这里代表没有权限.
+            }
+        }
+        String[] tmpList = new String[toApplyList.size()];
+        if (!toApplyList.isEmpty()) {
+            ActivityCompat.requestPermissions(this, toApplyList.toArray(tmpList), 123);
+        }
+
+    }
     private void initTTs() {
         LoggerProxy.printable(true); // 日志打印在logcat中
         boolean isMix = ttsMode.equals(TtsMode.MIX);
@@ -346,8 +410,7 @@ public class WNaviGuideActivity extends Activity {
         if (!authInfo.isSuccess()) {
             // 离线授权需要网站上的应用填写包名。本demo的包名是com.baidu.tts.sample，定义在build.gradle中
             String errorMsg = authInfo.getTtsError().getDetailMessage();
-            Log.d(TAG,
-                    "【error】鉴权失败 errorMsg=" + errorMsg);
+            Log.d(TAG, "【error】鉴权失败 errorMsg=" + errorMsg);
             return false;
         } else {
             Log.d(TAG, "验证通过，离线正式授权文件存在。");
@@ -362,6 +425,7 @@ public class WNaviGuideActivity extends Activity {
     }
 
     private void speak(String text) {
+
         /* 以下参数每次合成时都可以修改
          *  mSpeechSynthesizer.setParam(SpeechSynthesizer.PARAM_SPEAKER, "0");
          *  设置在线发声音人： 0 普通女声（默认） 1 普通男声 2 特别男声 3 情感男声<度逍遥> 4 情感儿童声<度丫丫>

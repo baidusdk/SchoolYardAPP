@@ -40,6 +40,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <uses-library android:name="org.apache.http.legacy" android:required="false"/>
         <activity android:name=".WNaviGuideActivity"/>
         <activity android:name=".BNaviGuideActivity"/>
         <activity android:name=".SuggetsionActivity"></activity>
@@ -56,8 +57,8 @@
 
         <meta-data
             android:name="com.baidu.lbsapi.API_KEY"
-            android:value="qCF4TdN7D0EZ5cbP6X6qP7AvFQqmZdO1" />
-        <uses-library android:name="org.apache.http.legacy" android:required="false"/>
+            android:value="eVSg4YPPLl5sRuapjZXlFbiS0RkGUWlE" />
+
         <service
             android:name="com.baidu.location.f"
             android:enabled="true"
