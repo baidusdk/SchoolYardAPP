@@ -6,7 +6,6 @@
  */
 package com.hd.app;
 
-import android.content.SharedPreferences;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -22,6 +21,7 @@ import android.widget.TextView;
 
 import com.google.gson.Gson;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -40,12 +40,17 @@ import okhttp3.Response;
 public class BookmarksActivity extends AppCompatActivity {
     private MyAdapter adapter;
     //尚未设置  等待填入
-    private String URL = "";
+    private String URL = "http://47.102.156.224/api/favorites";
     private int httpCode;
     private String responseData;
     private RecyclerView mRecyclerView;
     //路径ID  全部String
+    //个数
     private int intRecordNumber;
+    //json数组
+    private String record;
+
+    private String accountId;
     //数据库主码ID
     private int[] favoriteIdArray;
     //目的地
@@ -53,13 +58,13 @@ public class BookmarksActivity extends AppCompatActivity {
     //出发地
     private String[] departNameArray;
     //耗时
-    private String[] useTimeArray;
+    private int[] useTimeArray;
     //收录时间
     private String[] markTimeArray;
     //交通方式
     private String[] wayOfVehicleArray;
     //距离
-    private String[] distanceArray;
+    private int[] distanceArray;
     //出发地经纬度，注意类型
     private double[] departLaitudeArray;
 
@@ -103,23 +108,23 @@ public class BookmarksActivity extends AppCompatActivity {
     public class ContactInfo {
         protected String destination;
         protected String departName;
-        protected String useTime;
+        protected int useTime;
         protected String markTime;
-        protected String wayOfVehical;
-        protected String distance;
+        protected String wayOfVehicle;
+        protected int distance;
 
 
         /**
          * 构造函数，一个卡片内信息展示如下
          */
 
-        public ContactInfo(String destination, String departName, String useTime, String markTime, String wayOfVehicle, String distance) {
+        public ContactInfo(String destination, String departName, int useTime, String markTime, String wayOfVehicle, int distance) {
         this.departName = departName;
         this.destination = destination;
         this.distance = distance;
         this.useTime = useTime;
         this.markTime = markTime;
-        this.wayOfVehical = wayOfVehicle;
+        this.wayOfVehicle = wayOfVehicle;
     }
 }
 
@@ -163,22 +168,21 @@ public class BookmarksActivity extends AppCompatActivity {
             //通过其get()方法可以获得其中的对象
             ContactInfo ci = contactInfoList.get(position);
             //方式
-            holder.vVehicle.setText(ci.wayOfVehical + " - ");
+            holder.vVehicle.setText(ci.wayOfVehicle );
             //耗时
-            holder.vUseTime.setText(ci.useTime + " - ");
-            //j距离
-            holder.vDistance.setText(ci.distance);
-            //出发地
-            holder.vDepart.setText(ci.departName);
-            //目的地
+            holder.vUseTime.setText(ci.useTime + "分钟");
+//            //出发地
+           holder.vDepart.setText(ci.departName);
+//            //目的地
             holder.vDestination.setText(ci.destination);
-            //时间戳
-            holder.vTime.setText(ci.markTime);
+//            //时间戳
+           holder.vTime.setText(ci.markTime);
+           holder.vDistance.setText(ci.distance+"米");
             //设置删除按钮监听事件
             holder.iDelete.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    //···
+                    
                 }
             });
             /**
@@ -252,22 +256,25 @@ public class BookmarksActivity extends AppCompatActivity {
     private void parseJSONWithJSONObject(String jsonData) {
 
         try {
-            {
+                {
                 JSONObject jsonObject = new JSONObject(jsonData);
+                JSONObject jsonObject1 = new JSONObject(jsonObject.getString("data"));
                 /**
                  * 记录个数
                  */
-                intRecordNumber = Integer.parseInt(jsonObject.getString("recordNum"));
-                Log.d("recordNum", Integer.toString(intRecordNumber));
+                accountId = jsonObject1.getString("account");
+                Log.d("accountId",jsonObject.getString("data"));
+                intRecordNumber = jsonObject1.getInt("recordNum");
+                record = jsonObject1.getString("record");
                 /**
                  * 开数组,讲json内容读入
                  */
                 favoriteIdArray=new int[intRecordNumber];
                 departNameArray = new String[intRecordNumber];
                 destinationNameArray = new String[intRecordNumber];
-                distanceArray = new String[intRecordNumber];
+                distanceArray = new int[intRecordNumber];
                 markTimeArray = new String[intRecordNumber];
-                useTimeArray = new String[intRecordNumber];
+                useTimeArray = new int[intRecordNumber];
                 wayOfVehicleArray = new String[intRecordNumber];
                 departLaitudeArray = new double[intRecordNumber];
                 departLongitudeArray = new  double[intRecordNumber];
@@ -275,32 +282,24 @@ public class BookmarksActivity extends AppCompatActivity {
                 destinationLongitudeArray = new double[intRecordNumber];
 
                 /**
-                 * 构造record数组,形成从0到N的条目；
+                 * 定义JSON中的JSON数组
                  */
-                String[] recordArray;
-                recordArray = new String[intRecordNumber];
-                for (int i = 0; i < intRecordNumber; i++) {
-                    //record0 ...  rocord1..
-                    recordArray[i] = " record " + Integer.toString(i);
-                }
-
-                Log.d(TAG, recordArray[0]);
-                for (int i = 0; i < intRecordNumber; i++) {
-                    String message;
-                    message = jsonObject.getString(recordArray[i]);
-                    JSONObject messageRecordX = new JSONObject(message);
+                JSONArray jsonArray = new JSONArray(record);
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    JSONObject messageRecordX = (JSONObject)jsonArray.get(i);
                     //赋值
-                    favoriteIdArray[i]=messageRecordX.getInt("favoriteId");
+                    favoriteIdArray[i]=messageRecordX.getInt("favorite_id");
                     destinationNameArray[i] = messageRecordX.getString("destinationName");
-                    departNameArray[i] = messageRecordX.getString("departNameArray");
-                    distanceArray[i] = messageRecordX.getString("distance");
-                    useTimeArray[i] = messageRecordX.getString("usingTime");
-                    markTimeArray[i] = messageRecordX.getString("markTime");
+                    departNameArray[i] = messageRecordX.getString("departName");
+                    distanceArray[i] = messageRecordX.getInt("distance");
+                    useTimeArray[i] = messageRecordX.getInt("usingTime");
+                    markTimeArray[i] = messageRecordX.getString("time");
                     wayOfVehicleArray[i] = messageRecordX.getString("vehicle");
                     departLaitudeArray[i] = messageRecordX.getDouble("departLatitude");
                     departLongitudeArray[i]= messageRecordX.getDouble("departLongitude");
                     destinationLongitudeArray[i] = messageRecordX.getDouble("destinationLongitude");
                     destinationLatitudeArray[i]=messageRecordX.getDouble("destinationLatitude");
+
                 }
             }
         } catch (Exception e) {
@@ -318,13 +317,14 @@ public class BookmarksActivity extends AppCompatActivity {
 
         try {
             //读取用户ID和token
-            SharedPreferences pref = getSharedPreferences("user", MODE_PRIVATE);
-            String user_id = pref.getString("id", "0");
+           // SharedPreferences pref = getSharedPreferences("user", MODE_PRIVATE);
+           //  String user_id = pref.getString("id", "0");
+            String account = "031602313";
             //  String token = pref.getString("token", "0");//没有token 待删。
-            Log.d("userId:", user_id);
+            Log.d("userId:", account);
             //  Log.d("token:", token);
             User user = new User();
-            user.setUser_id(user_id);
+            user.setUser_id(account);
             //user.setToken(token);
             OkHttpClient client = new OkHttpClient();
             Gson gson = new Gson();
@@ -370,7 +370,7 @@ public class BookmarksActivity extends AppCompatActivity {
 
 
     public class User {
-        private String id;
+        private String account;
 //        private String token;
 //
 //        public String getToken() {
@@ -383,11 +383,11 @@ public class BookmarksActivity extends AppCompatActivity {
 //        }
 
         public String getUser_id() {
-            return id;
+            return account;
         }
 
         public void setUser_id(String user_id) {
-            this.id = user_id;
+            this.account = user_id;
         }
     }
 }
