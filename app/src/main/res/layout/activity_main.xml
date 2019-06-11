@@ -86,13 +86,17 @@
 
 
         <Button
+            android:text="个人"
+            android:gravity="center_horizontal"
+            android:textSize="10dp"
+            android:textColor="@color/white"
             android:id="@+id/person_icon"
-            android:layout_width="55dp"
-            android:layout_height="52dp"
-            android:background="@drawable/person_icon2"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:background="@drawable/person_icon"
             android:layout_alignParentRight="true"
             android:layout_marginTop="40dp"
-            android:layout_marginRight="7.5dp"
+            android:layout_marginRight="10dp"
             />
 
 
@@ -100,14 +104,35 @@
             android:text="@string/spot"
             android:gravity="center_horizontal"
             android:textSize="10dp"
+            android:textColor="@color/white"
             android:id="@+id/spot_open_icon"
-            android:layout_marginRight="5dp"
+            android:layout_marginRight="10dp"
             android:layout_marginTop="20dp"
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:layout_alignParentRight="true"
             android:layout_below="@+id/person_icon"
             android:background="@drawable/spot_check"
+            android:button="@null"
+            android:checked="false"
+            android:alpha="0.85"
+            />
+
+
+        <android.support.v7.widget.AppCompatCheckBox
+
+            android:text="室内图"
+            android:gravity="center_horizontal"
+            android:textSize="10dp"
+            android:textColor="@color/white"
+            android:id="@+id/indoor_open_icon"
+            android:layout_marginRight="10dp"
+            android:layout_marginTop="20dp"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_alignParentRight="true"
+            android:layout_below="@+id/spot_open_icon"
+            android:background="@drawable/indoor_check"
             android:button="@null"
             android:checked="false"
             android:alpha="0.85"
@@ -140,9 +165,9 @@
                     android:id="@+id/close_floorView"
                     android:layout_width="12dp"
                     android:layout_height="12dp"
-                    android:layout_alignParentRight="true"
+                    android:layout_alignParentLeft="true"
                     android:layout_marginTop="3dp"
-                    android:layout_marginRight="6dp"
+                    android:layout_marginLeft="6dp"
                     android:layout_marginBottom="1dp"
                     android:background="@drawable/close_icon" />
 

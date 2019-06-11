@@ -77,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
     private Button follow_icon;
     private Button normal_icon;
     private CheckBox spotOpenCheck;
+    private CheckBox indoorOpenCheck;
     /**
      * 下面三个元素是室内图功能的按键
      */
@@ -98,6 +99,7 @@ public class MainActivity extends AppCompatActivity {
     /**
      * 当前的精度
      */
+
     private float mCurrentAccracy;
     private int mCurrentDirection = 0;
 
@@ -120,7 +122,8 @@ public class MainActivity extends AppCompatActivity {
     private float[] values = new float[3];
     private User user;
     private List<Spot> spotList = new ArrayList<>();//景点信息列表
-    private List<Marker> markerList = new ArrayList<>();
+    private List<Marker> spotMarkerList = new ArrayList<>();
+    private List<Marker> indoorMarkerList = new ArrayList<>();
 
     private MyLocationConfiguration myLocationConfiguration;
 
@@ -136,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = getIntent();
         user = (User) getIntent().getSerializableExtra("user_information");
         Log.d("用户信息传送",user.getAccount());
-        requestAuthority();//静态申请手机权限
+        initPermission();//静态申请手机权限
         getSensorManager();;//初始化传感器
         init();//初始化控件
         initMap();//初始化地图
@@ -149,29 +152,41 @@ public class MainActivity extends AppCompatActivity {
      * 申请手机权限
      */
 
-    private void requestAuthority()
-    {
-        if(ContextCompat.checkSelfPermission(MainActivity.this,Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED) {
-            permissionList.add(Manifest.permission.ACCESS_FINE_LOCATION);//申请手机定位权限
-        }
-        if(ContextCompat.checkSelfPermission(MainActivity.this,Manifest.permission.READ_PHONE_STATE)!= PackageManager.PERMISSION_GRANTED) {
-            permissionList.add(Manifest.permission.READ_PHONE_STATE);//读取系统信息，包含系统版本等信息，用作统计
-        }
-        if(ContextCompat.checkSelfPermission(MainActivity.this,Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED) {
-            permissionList.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);//读写内存
-        }
-        if(!permissionList.isEmpty())
+    private void initPermission() {
         {
-            String [] permissions = permissionList.toArray(new String[permissionList.size()]);
-            ActivityCompat.requestPermissions(MainActivity.this,permissions,1);
+            String[] permissions = {
+                    Manifest.permission.INTERNET,
+                    Manifest.permission.ACCESS_NETWORK_STATE,
+                    Manifest.permission.MODIFY_AUDIO_SETTINGS,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    Manifest.permission.WRITE_SETTINGS,
+                    Manifest.permission.READ_PHONE_STATE,
+                    Manifest.permission.ACCESS_WIFI_STATE,
+                    Manifest.permission.CHANGE_WIFI_STATE,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+            };
+
+            ArrayList<String> toApplyList = new ArrayList<String>();
+
+            for (String perm : permissions) {
+                if (PackageManager.PERMISSION_GRANTED != ContextCompat.checkSelfPermission(this, perm)) {
+                    toApplyList.add(perm);
+                    // 进入到这里代表没有权限.
+                }
+            }
+            String[] tmpList = new String[toApplyList.size()];
+            if (!toApplyList.isEmpty()) {
+                ActivityCompat.requestPermissions(this, toApplyList.toArray(tmpList), 123);
+            }
+
         }
     }
-    //权限申请回调
+
+
     @Override
-    public void onRequestPermissionsResult(int requestCode,String [] permissions,int[]grantResults)
-    {
-        switch (requestCode)
-        {
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        // 此处为android 6.0以上动态授权的回调，用户自行实现。
+        switch (requestCode) {
             case 1: {
                 if (grantResults.length > 0) {
                     for (int result : grantResults) {
@@ -182,18 +197,62 @@ public class MainActivity extends AppCompatActivity {
                         }
 
                     }
-                }
-                else{
-                    Toast.makeText(this,"未知错误",Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "未知错误", Toast.LENGTH_SHORT).show();
                     finish();
                 }
                 break;
             }
-                default:
+            default:
         }
-
     }
 
+
+//    private void requestAuthority()
+//    {
+//        if(ContextCompat.checkSelfPermission(MainActivity.this,Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED) {
+//            permissionList.add(Manifest.permission.ACCESS_FINE_LOCATION);//申请手机定位权限
+//        }
+//        if(ContextCompat.checkSelfPermission(MainActivity.this,Manifest.permission.READ_PHONE_STATE)!= PackageManager.PERMISSION_GRANTED) {
+//            permissionList.add(Manifest.permission.READ_PHONE_STATE);//读取系统信息，包含系统版本等信息，用作统计
+//        }
+//        if(ContextCompat.checkSelfPermission(MainActivity.this,Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED) {
+//            permissionList.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);//读写内存
+//        }
+//        if(!permissionList.isEmpty())
+//        {
+//            String [] permissions = permissionList.toArray(new String[permissionList.size()]);
+//            ActivityCompat.requestPermissions(MainActivity.this,permissions,1);
+//        }
+//    }
+//    //权限申请回调
+//    @Override
+//    public void onRequestPermissionsResult(int requestCode,String [] permissions,int[]grantResults)
+//    {
+//        switch (requestCode)
+//        {
+//            case 1: {
+//                if (grantResults.length > 0) {
+//                    for (int result : grantResults) {
+//                        if (result != PackageManager.PERMISSION_GRANTED) {
+//                            Toast.makeText(this, "必须要同意以上所有权限才能正常使用app", Toast.LENGTH_SHORT).show();
+//                            finish();
+//                            return;
+//                        }
+//
+//                    }
+//                }
+//                else{
+//                    Toast.makeText(this,"未知错误",Toast.LENGTH_SHORT).show();
+//                    finish();
+//                }
+//                break;
+//            }
+//                default:
+//        }
+//
+//    }
+//
 
     /**
      * 初始化控件
@@ -216,6 +275,7 @@ public class MainActivity extends AppCompatActivity {
 //        myLocationConfiguration = new MyLocationConfiguration(MyLocationConfiguration.LocationMode.COMPASS,true,);
         locationButton = (Button)findViewById(R.id.locotion_icon);
         spotOpenCheck = (CheckBox)findViewById(R.id.spot_open_icon);
+        indoorOpenCheck = (CheckBox)findViewById(R.id.indoor_open_icon);
 
         cardView = (CardView)findViewById(R.id.floor_card);
         closeFloorCard = (Button)findViewById(R.id.close_floorView);
@@ -224,14 +284,9 @@ public class MainActivity extends AppCompatActivity {
         floorImg.enable();
 
 
-        LatLng p = new LatLng(1.0,1.0);
-        Integer[] temp = {R.drawable.library_f5,R.drawable.library_f4,R.drawable.library_f3,R.drawable.library_f2,R.drawable.library_f1,
-        };
+        initBuildingList();
 
 
-
-        Building b = new Building("图书馆",p,0,5,temp);
-        buildingList.add(b);
 
 //        PhotoView ph = (PhotoView)findViewById(R.id.floor_img);
 //        ph.enable();
@@ -239,6 +294,67 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
+
+    private void initBuildingList()
+    {
+        LatLng p =null;
+        Integer[] temp = null;
+        Building b = null;
+
+        p = new LatLng(26.064807,119.204324);
+        temp = new Integer[]{R.mipmap.library_f5,R.mipmap.library_f4,R.mipmap.library_f3,R.mipmap.library_f2,R.mipmap.library_f1,
+        };
+        b = new Building("图书馆",p,0,5,temp);
+        buildingList.add(b);
+
+
+        p = new LatLng(26.064373,119.201957);//西三
+        temp = new Integer[]{R.mipmap.west_3_f5,R.mipmap.west_3_f4,R.mipmap.west_3_f3,R.mipmap.west_3_f2,R.mipmap.west_3_f1};
+        b = new Building("36栋西3教学楼",p,0,5,temp);
+        buildingList.add(b);
+
+
+
+        p = new LatLng(26.064896,119.201988);//西二
+        temp = new Integer[]{R.mipmap.west_2_f5,R.mipmap.west_2_f4,R.mipmap.west_2_f3,R.mipmap.west_2_f2,R.mipmap.west_2_f1};
+        b = new Building("37栋西2教学楼",p,0,5,temp);
+        buildingList.add(b);
+
+        p = new LatLng(26.065302,119.202029);//西一
+        temp = new Integer[]{R.mipmap.west_1_f5,R.mipmap.west_1_f4,R.mipmap.west_1_f3,R.mipmap.west_1_f2,R.mipmap.west_1_f1};
+        b = new Building("38栋西1教学楼",p,0,5,temp);
+        buildingList.add(b);
+
+        p = new LatLng(26.065983,119.201944);//中楼
+        temp = new Integer[]{R.mipmap.middle_f5,R.mipmap.middle_f4,R.mipmap.middle_f3,R.mipmap.middle_f2,R.mipmap.middle_f1};
+        b = new Building("39栋中教学楼",p,0,5,temp);
+        buildingList.add(b);
+
+
+
+        p = new LatLng(26.066259,119.202595);//东一
+        temp = new Integer[]{R.mipmap.east_1_f5,R.mipmap.east_1_f4,R.mipmap.east_1_f3,R.mipmap.east_1_f2,R.mipmap.east_1_f1};
+        b = new Building("40栋东1教学楼",p,0,5,temp);
+        buildingList.add(b);
+
+
+        p = new LatLng(26.066953,119.203489);//东二
+        temp = new Integer[]{R.mipmap.east_2_f5,R.mipmap.east_2_f4,R.mipmap.east_2_f3,R.mipmap.east_2_f2,R.mipmap.east_2_f1};
+        b = new Building("41栋东2教学楼",p,0,5,temp);
+        buildingList.add(b);
+
+        p = new LatLng(26.066689,119.204279);//东三
+        temp = new Integer[]{R.mipmap.east_3_f5,R.mipmap.east_3_f4,R.mipmap.east_3_f3,R.mipmap.east_3_f2,R.mipmap.east_3_f1};
+        b = new Building("42栋东3教学楼",p,0,5,temp);
+        buildingList.add(b);
+
+
+
+
+
+
+    }
+
 
 
     /**
@@ -280,6 +396,30 @@ public class MainActivity extends AppCompatActivity {
         // 初始化传感器
     }
 
+
+
+
+    private void initSpotList()
+    {
+        Spot spot = null;
+        spot = new Spot("1","福州大学福友阁",26.059707,119.206875,R.mipmap.fuyouge1);
+        spotList.add(spot);//福友阁
+
+        spot = new Spot("2","图书馆",26.064811,119.204315,R.mipmap.library1);
+        spotList.add(spot);//图书馆
+
+        spot = new Spot("3","宏晖文体综合馆",26.057833,119.203511,R.mipmap.honghui1);
+        spotList.add(spot);//宏晖文体综合馆
+
+        spot = new Spot("4","青春广场",26.062551,119.198013,R.mipmap.qcgc1);
+        spotList.add(spot);//青春广场
+
+        spot = new Spot("5","素质拓展中心",26.062596,119.202128,R.mipmap.sutuo1);
+        spotList.add(spot);//素拓
+
+
+    }
+
     /**
      * 添加地图上的景点标记
      */
@@ -301,10 +441,8 @@ public class MainActivity extends AppCompatActivity {
 //        }).start();
 //        Bitmap b1 = ((BitmapDrawable)getResources().getDrawable(R.drawable.east_3_1)).getBitmap();
 //        Bitmap b2 = ((BitmapDrawable)getResources().getDrawable(R.drawable.east_3_2)).getBitmap();
-        Spot spot1 = new Spot("1","good",26.0646793692,119.2042646576,R.drawable.east_3_1);
-       // Spot spot2 = new Spot("2","happy",26.0610670532,119.19727742672,2);
+        initSpotList();
 
-        spotList.add(spot1);
         //spotList.add(spot2);
        for(Spot spot : spotList)
        {
@@ -329,10 +467,11 @@ public class MainActivity extends AppCompatActivity {
                    .anchor((float)0.5,(float)0.5);
         //在地图上添加Marker，并显示
            Bundle mBundle = new Bundle();
-           mBundle.putString("id", spot.getSpotID());
+           mBundle.putString("spotname", spot.getSpotName());
+           mBundle.putString("type","0");
            Marker marker =(Marker)mBaiduMap.addOverlay(option);
            marker.setExtraInfo(mBundle);
-           markerList.add(marker); //将marker以id的区别加以管理
+           spotMarkerList.add(marker); //将marker以id的区别加以管理
        }
 
     }
@@ -402,14 +541,46 @@ public class MainActivity extends AppCompatActivity {
             //默认返回false
             @Override
             public boolean onMarkerClick(Marker marker) {
+
                 Bundle bundle = marker.getExtraInfo();
-                String id = bundle.getString("id");
-                Log.d("mainMaker", id);
-                Intent intent = new Intent(MainActivity.this, SpotConcreteActivity.class);
-                intent.putExtra("id",id);//用户信息传入下一个界面
-                //根据id的值向服务器请求对应的信息
-                // requestSpotConcrete(id);
-                startActivity(intent);
+                if(bundle.getString("type").equals("0")) {
+                    String spotName = bundle.getString("spotname");
+                    Intent intent = new Intent(MainActivity.this, SpotConcreteActivity.class);
+                    intent.putExtra("spotname", spotName);//用户信息传入下一个界面
+                    //根据id的值向服务器请求对应的信息
+                    // requestSpotConcrete(id);
+                    startActivity(intent);
+                }
+
+                if(bundle.getString("type").equals("1"))
+                {
+//                    String poiName =mapPoi.getName(); //名称
+//                    LatLng point = mapPoi.getPosition(); //坐标
+                    String buildingName = bundle.getString("buildingName");
+                    RecyclerView recyclerView = findViewById(R.id.floor_list_icon);
+                    LinearLayoutManager layoutManager = new LinearLayoutManager(MainActivity.this);
+                    recyclerView.setLayoutManager(layoutManager);
+                    boolean flag = false;
+                    for(int i = 0 ;i<buildingList.size();i++)
+                    {
+                        Building b = buildingList.get(i);
+
+                        if(b.getBuildingName().equals(buildingName)) {
+                            floorImg.setImageResource(R.drawable.select_floor_back);
+                            Log.d("地理位置", b.getBuildingName());
+                            FloorListAdapter adapter = new FloorListAdapter(b.getFloorList());
+                            recyclerView.setAdapter(adapter);
+                            buildingNameText.setText(buildingName);
+                            cardView.setVisibility(View.VISIBLE);
+                            flag = true;
+                            break;
+                        }
+                    }
+                    if(!flag)
+                    {
+                        Toast.makeText(MainActivity.this,"当前地点尚未加入室内图",Toast.LENGTH_SHORT).show();
+                    }
+                }
                 return false;
             }
         });
@@ -461,7 +632,28 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+        indoorOpenCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked)
+                {
+                    float zoom = mBaiduMap.getMapStatus().zoom;
+                        indoorOpenCheck.setChecked(true);
+                        markerInitProgress.setVisibility(View.VISIBLE);
+                        initIndoorMarker();
+                        markerInitProgress.setVisibility(View.GONE);
 
+
+                }
+                else
+                {
+                    indoorOpenCheck.setChecked(false);
+                    markerInitProgress.setVisibility(View.VISIBLE);
+                    removeIndoorMarker();
+                    markerInitProgress.setVisibility(View.GONE);
+                }
+            }
+        });
 
         closeFloorCard.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -497,31 +689,7 @@ public class MainActivity extends AppCompatActivity {
          */
         @Override
         public boolean onMapPoiClick(MapPoi mapPoi) {
-            String poiName =mapPoi.getName(); //名称
-            LatLng point = mapPoi.getPosition(); //坐标
-            RecyclerView recyclerView = findViewById(R.id.floor_list_icon);
-            LinearLayoutManager layoutManager = new LinearLayoutManager(MainActivity.this);
-            recyclerView.setLayoutManager(layoutManager);
-            boolean flag = false;
-            for(int i = 0 ;i<buildingList.size();i++)
-            {
-                Building b = buildingList.get(i);
 
-                if(b.getBuildingName().equals(poiName)) {
-                    floorImg.setImageResource(R.drawable.select_floor_back);
-                    Log.d("地理位置", b.getBuildingName());
-                    FloorListAdapter adapter = new FloorListAdapter(b.getFloorList());
-                    recyclerView.setAdapter(adapter);
-                    buildingNameText.setText(poiName);
-                    cardView.setVisibility(View.VISIBLE);
-                    flag = true;
-                    break;
-                }
-            }
-            if(!flag)
-            {
-                Toast.makeText(MainActivity.this,"当前地点尚未加入室内图",Toast.LENGTH_SHORT).show();
-            }
             return false;
         }
 
@@ -529,7 +697,43 @@ public class MainActivity extends AppCompatActivity {
 
     };
 
+    private void initIndoorMarker()
+    {
+        for(Building b : buildingList)
+        {
+            BitmapDescriptor bitmap = BitmapDescriptorFactory
+                    .fromResource(R.drawable.indoor_marker);
+            LatLng point = new LatLng(b.getPoint().latitude,b.getPoint().longitude);
+            //构建MarkerOption，用于在地图上添加Marker
+            OverlayOptions option = new MarkerOptions()
+                    .position(point) //必传参数
+                    .icon(bitmap) //必传参数
+                    //设置平贴地图，在地图中双指下拉查看效果
+                    .flat(false)
+                    .perspective(true)
+                    .anchor((float)0.5,(float)0.5);
+            //在地图上添加Marker，并显示
 
+
+            Bundle mBundle = new Bundle();
+            mBundle.putString("type","1");
+            mBundle.putString("buildingName",b.getBuildingName());
+            Marker marker =(Marker)mBaiduMap.addOverlay(option);
+            marker.setExtraInfo(mBundle);
+            indoorMarkerList.add(marker); //将marker以id的区别加以管理
+        }
+    }
+
+
+    private void removeIndoorMarker()
+    {
+        int i = 0;
+        for(i=0; i< indoorMarkerList.size(); i++)
+        {
+            Marker m = indoorMarkerList.get(i);
+            m.remove();
+        }
+    }
 
 
     /**
@@ -537,9 +741,9 @@ public class MainActivity extends AppCompatActivity {
      */
     private void removeMarker() {
         int i = 0;
-        for(i=0;i<markerList.size();i++)
+        for(i=0; i< spotMarkerList.size(); i++)
         {
-            Marker m = markerList.get(i);
+            Marker m = spotMarkerList.get(i);
             m.remove();
         }
     }

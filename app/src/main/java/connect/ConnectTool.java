@@ -40,7 +40,7 @@ public class ConnectTool {
     public String login(User user)
     {
 
-        String loginUrl ="http://radiant-brushlands-28284.herokuapp.com/api/login";
+        String loginUrl ="http://47.102.156.224/api/login";
         Log.d("登录链接", loginUrl);
         try {
             String json=g.toJson(user);

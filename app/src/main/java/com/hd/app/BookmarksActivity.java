@@ -45,7 +45,9 @@ public class BookmarksActivity extends AppCompatActivity {
     private String responseData;
     private RecyclerView mRecyclerView;
     //路径ID  全部String
-    private int intBookmarksNumber;
+    private int intRecordNumber;
+    //数据库主码ID
+    private int[] favoriteIdArray;
     //目的地
     private String[] destinationNameArray;
     //出发地
@@ -58,7 +60,16 @@ public class BookmarksActivity extends AppCompatActivity {
     private String[] wayOfVehicleArray;
     //距离
     private String[] distanceArray;
+    //出发地经纬度，注意类型
+    private double[] departLaitudeArray;
+
+    private double[] departLongitudeArray;
+    //目的地经纬度
+    private double[] destinationLatitudeArray;
+
+    private double[] destinationLongitudeArray;
     private TextView mtitle;
+    private String TAG = "BookmarksActivity";
     List<ContactInfo> mList = new ArrayList<>();
 
     @Override
@@ -103,14 +114,14 @@ public class BookmarksActivity extends AppCompatActivity {
          */
 
         public ContactInfo(String destination, String departName, String useTime, String markTime, String wayOfVehicle, String distance) {
-            this.departName = departName;
-            this.destination = destination;
-            this.distance = distance;
-            this.useTime = useTime;
-            this.markTime = markTime;
-            this.wayOfVehical = wayOfVehicle;
-        }
+        this.departName = departName;
+        this.destination = destination;
+        this.distance = distance;
+        this.useTime = useTime;
+        this.markTime = markTime;
+        this.wayOfVehical = wayOfVehicle;
     }
+}
 
 
     public class MyAdapter extends RecyclerView.Adapter
@@ -220,13 +231,13 @@ public class BookmarksActivity extends AppCompatActivity {
     }
 
     private void initInfo() {
-        ContactInfo[] elementArray = new ContactInfo[intBookmarksNumber];
+        ContactInfo[] elementArray = new ContactInfo[intRecordNumber];
 //        测试数据
 //        ContactInfo [] element =new  ContactInfo[10];  之后用数组
         /**
          * 初始化
          */
-        for (int i = intBookmarksNumber - 1; i >= 0; i--) {
+        for (int i = intRecordNumber - 1; i >= 0; i--) {
             elementArray[i] = new ContactInfo(destinationNameArray[i], departNameArray[i], useTimeArray[i], markTimeArray[i], wayOfVehicleArray[i], distanceArray[i]);
             mList.add(elementArray[i]);
 
@@ -246,44 +257,50 @@ public class BookmarksActivity extends AppCompatActivity {
                 /**
                  * 记录个数
                  */
-                intBookmarksNumber = Integer.parseInt(jsonObject.getString("userNum"));
-                Log.d("userNumber", Integer.toString(intBookmarksNumber));
+                intRecordNumber = Integer.parseInt(jsonObject.getString("recordNum"));
+                Log.d("recordNum", Integer.toString(intRecordNumber));
                 /**
                  * 开数组,讲json内容读入
                  */
-                departNameArray = new String[intBookmarksNumber];
-                destinationNameArray = new String[intBookmarksNumber];
-                distanceArray = new String[intBookmarksNumber];
-                markTimeArray = new String[intBookmarksNumber];
-                useTimeArray = new String[intBookmarksNumber];
-                wayOfVehicleArray = new String[intBookmarksNumber];
+                favoriteIdArray=new int[intRecordNumber];
+                departNameArray = new String[intRecordNumber];
+                destinationNameArray = new String[intRecordNumber];
+                distanceArray = new String[intRecordNumber];
+                markTimeArray = new String[intRecordNumber];
+                useTimeArray = new String[intRecordNumber];
+                wayOfVehicleArray = new String[intRecordNumber];
+                departLaitudeArray = new double[intRecordNumber];
+                departLongitudeArray = new  double[intRecordNumber];
+                destinationLatitudeArray = new double[intRecordNumber];
+                destinationLongitudeArray = new double[intRecordNumber];
 
                 /**
-                 * 构造record数组
+                 * 构造record数组,形成从0到N的条目；
                  */
-                String[] userArray;
-                userArray = new String[intBookmarksNumber];
-                for (int i = 0; i < intBookmarksNumber; i++) {
-                    //user1 ,user2..
-                    userArray[i] = " user " + Integer.toString(i);
+                String[] recordArray;
+                recordArray = new String[intRecordNumber];
+                for (int i = 0; i < intRecordNumber; i++) {
+                    //record0 ...  rocord1..
+                    recordArray[i] = " record " + Integer.toString(i);
                 }
 
-                Log.d("ABCD", userArray[0]);
-                for (int i = 0; i < intBookmarksNumber; i++) {
+                Log.d(TAG, recordArray[0]);
+                for (int i = 0; i < intRecordNumber; i++) {
                     String message;
-                    message = jsonObject.getString(userArray[i]);
+                    message = jsonObject.getString(recordArray[i]);
                     JSONObject messageRecordX = new JSONObject(message);
+                    //赋值
+                    favoriteIdArray[i]=messageRecordX.getInt("favoriteId");
                     destinationNameArray[i] = messageRecordX.getString("destinationName");
                     departNameArray[i] = messageRecordX.getString("departNameArray");
-                    /**
-                     店名、食堂名
-                     */
                     distanceArray[i] = messageRecordX.getString("distance");
-                    useTimeArray[i] = messageRecordX.getString("useTime");
+                    useTimeArray[i] = messageRecordX.getString("usingTime");
                     markTimeArray[i] = messageRecordX.getString("markTime");
                     wayOfVehicleArray[i] = messageRecordX.getString("vehicle");
-                    //截取时间
-                    //timeArray[i] = messageTimeX.getString("date").substring(0, 19);
+                    departLaitudeArray[i] = messageRecordX.getDouble("departLatitude");
+                    departLongitudeArray[i]= messageRecordX.getDouble("departLongitude");
+                    destinationLongitudeArray[i] = messageRecordX.getDouble("destinationLongitude");
+                    destinationLatitudeArray[i]=messageRecordX.getDouble("destinationLatitude");
                 }
             }
         } catch (Exception e) {
@@ -338,7 +355,12 @@ public class BookmarksActivity extends AppCompatActivity {
                     parseJSONWithJSONObject(responseData);
                     //实例化MyAdapter并传入mList对象
                     initInfo();
-                    runOnUiThread(() -> adapter.addData(mList));
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            adapter.addData(mList);
+                        }
+                    });
                 }
             });
         } catch (Exception e) {
