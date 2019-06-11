@@ -293,7 +293,7 @@ public class NavigationActivity extends BaseActivity implements
         setStatusBar();
         initConfig();
         initPermission();
-        intiNavEnigne();
+        //intiNavEnigne();
         initTTs();
         initMap();
         getSensorManager();
@@ -974,7 +974,7 @@ public class NavigationActivity extends BaseActivity implements
                 .from(stNode).to(enNode));
         speak("百度导航为您服务");
 
-       mNaviHelper.startBikeNavi(NavigationActivity.this);
+       //mNaviHelper.startBikeNavi(NavigationActivity.this);
     }
 
 
