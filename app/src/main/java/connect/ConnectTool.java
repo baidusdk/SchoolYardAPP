@@ -57,12 +57,11 @@ public class ConnectTool {
     }
 
 
-    //登录使用的连接工具类
+    //路径收藏按钮
     public String routeCollectRequest(RouteColloctionItem rtIcom)
     {
 
-        String rtCollectUrl ="http://radiant-brushlands-28284.herokuapp.com/api/login";
-
+        String rtCollectUrl ="http://47.102.156.224/api/path";
         try {
             String json=g.toJson(rtIcom);
             RequestBody body = RequestBody.create(JSON, json);

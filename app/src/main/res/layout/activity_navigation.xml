@@ -51,6 +51,15 @@
                         android:text="@string/route"
                         android:textColor="@color/white"
                         android:textSize="16sp" />
+                    <Button
+                        android:layout_width="25dp"
+                        android:layout_height="25dp"
+                        android:id="@+id/open_route_collect"
+                        android:layout_centerVertical="true"
+                        android:layout_alignParentRight="true"
+                        android:layout_marginRight="7.5dp"
+                        android:background="@drawable/open_route_collect_icon"
+                        />
                 </RelativeLayout>
             </LinearLayout>
 

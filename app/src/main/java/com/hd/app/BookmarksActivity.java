@@ -6,15 +6,17 @@
  */
 package com.hd.app;
 
+import android.content.Intent;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -77,6 +79,7 @@ public class BookmarksActivity extends AppCompatActivity {
     private String TAG = "BookmarksActivity";
     List<ContactInfo> mList = new ArrayList<>();
 
+    private Button backButton;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -93,6 +96,13 @@ public class BookmarksActivity extends AppCompatActivity {
          */
         adapter = new MyAdapter(mList);
         mRecyclerView.setAdapter(adapter);
+        backButton = (Button)findViewById(R.id.back_icon);
+        backButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
         //发送POST
         sendRequestWithOkHttp();
         //解析post后的东西
@@ -191,7 +201,16 @@ public class BookmarksActivity extends AppCompatActivity {
             holder.mRelativeLayout.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-
+                    ContactInfo ci = contactInfoList.get(position);
+                    Intent intent = new Intent(BookmarksActivity.this, NavigationActivity.class);
+                    intent.putExtra("action","2");
+                    intent.putExtra("beginName",ci.departName);
+                    intent.putExtra("endName",ci.destination);
+                    intent.putExtra("beginLatitude",departLaitudeArray[position]);
+                    intent.putExtra("beginLogitude",departLongitudeArray[position]);
+                    intent.putExtra("endLatitude",destinationLatitudeArray[position]);
+                    intent.putExtra("endLogitude",departLongitudeArray[position]);
+                    startActivity(intent);
                 }
             });
         }
@@ -299,7 +318,6 @@ public class BookmarksActivity extends AppCompatActivity {
                     departLongitudeArray[i]= messageRecordX.getDouble("departLongitude");
                     destinationLongitudeArray[i] = messageRecordX.getDouble("destinationLongitude");
                     destinationLatitudeArray[i]=messageRecordX.getDouble("destinationLatitude");
-
                 }
             }
         } catch (Exception e) {

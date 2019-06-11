@@ -15,6 +15,9 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONObject;
+
+import connect.ConnectTool;
 import module.User;
 
 public class LoginActivity extends AppCompatActivity {
@@ -108,19 +111,19 @@ public class LoginActivity extends AppCompatActivity {
                 try {
                     state = 0;
 
-//                    ConnectTool connectTool = new ConnectTool();
-//                    String temp=connectTool.login(user);
-//                    Log.d("登录标识", temp);
-//                    JSONObject jsonObject = new JSONObject(temp);
-//                    String s = jsonObject.getString("msg");
-//
-//
-//                    if(s.equals("success"))
-//                    state = 0;//服务器端返回成功
-//                    else
-//                    {
-//                        state = 1;
-//                    }
+                    ConnectTool connectTool = new ConnectTool();
+                    String temp=connectTool.login(user);
+                    Log.d("登录标识", temp);
+                    JSONObject jsonObject = new JSONObject(temp);
+                    String s = jsonObject.getString("msg");
+
+
+                    if(s.equals("success"))
+                    state = 0;//服务器端返回成功
+                    else
+                    {
+                        state = 1;
+                    }
                     Message message = new Message();
                     message.what = Click_Login;
                     handler.sendMessage(message);
