@@ -98,6 +98,7 @@ import com.hd.app.util.Utils;
 
 import org.json.JSONObject;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -126,6 +127,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
      * @param savedInstanceState
      */
 
+    private String collectCallback;
     private GeoCoder mCoder;
     private double bikeLatitude = 0;
     private double bikeLogitude = 0;
@@ -209,6 +211,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
     private Button chooseRouteRight;
     //骑行步行选择按钮
     private Button beginNavgation;//开始导航按钮
+    private Button openRouteCollect;//打开路径收藏夹按钮
 
 
     private double mCurrentLantitude;
@@ -289,10 +292,13 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
 
 
     private String actionId = null;
+    private double beginLatitude;
+    private double beginLogitude;
     private double endLatitude;
     private double endLogitude;
 
     private boolean isLocationSpot = true;
+    private boolean isRouteCollect = true;
 
 
     /**
@@ -335,11 +341,33 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
         if(intent.getStringExtra("action").equals("2"))
         {
             //从路径收藏夹打开路径规划
+            actionId = intent.getStringExtra("action");
+            beginLatitude = intent.getDoubleExtra("beginLatitude",0.0000000000);
+            Log.d("起点纬度",String.valueOf(beginLatitude));
+            beginLogitude = intent.getDoubleExtra("beginLogitude",0.0000000000);
+            endLatitude = intent.getDoubleExtra("endLatitude",0.0000000000);
+            endLogitude = intent.getDoubleExtra("endLogitude",0.0000000000);
+            String cbegin = intent.getStringExtra("beginName");
+            String cend = intent.getStringExtra("endName");
+            start_place_edit.setText(cbegin);
+            destination_edit.setText(cend);
+            walkingRoutePlan(cbegin,cend);
+            routeMap.setVisibility(View.VISIBLE);
+            routeInformCard.setVisibility(View.VISIBLE);
+
         }
     }
 
 
     private void setListener() {
+        openRouteCollect.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(NavigationActivity.this,BookmarksActivity.class);
+                startActivity(intent);
+            }
+        });
+
         returnIocn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -387,6 +415,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
             @Override
             public void onClick(View v) {
                 isLocationSpot = false;
+                isRouteCollect = false;
                 beginLocation = start_place_edit.getText().toString().trim();
                 endLocation = destination_edit.getText().toString().trim();
                 if(beginLocation.isEmpty()||endLocation.isEmpty()) {
@@ -631,13 +660,8 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
                     String temp=connectTool.routeCollectRequest(rt);
                     Log.d("登录标识", temp);
                     JSONObject jsonObject = new JSONObject(temp);
-                    String s = jsonObject.getString("msg");
-                    if(s.equals("success"))
-                        Toast.makeText(NavigationActivity.this, "收藏成功", Toast.LENGTH_SHORT).show();
-                    else
-                    {
-                        Toast.makeText(NavigationActivity.this,"网络错误，收藏失败",Toast.LENGTH_SHORT).show();
-                    }
+                    collectCallback = jsonObject.getString("msg");
+
                     Message message = new Message();
                     message.what = Click_Collect_Route;
                     handler.sendMessage(message);
@@ -658,6 +682,13 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case Click_Collect_Route: {
+                    if(collectCallback.equals("success"))
+                        Toast.makeText(NavigationActivity.this, "收藏成功", Toast.LENGTH_SHORT).show();
+                    else
+                    {
+                        Toast.makeText(NavigationActivity.this,"收藏失败,网络错误或者该路径已收藏",Toast.LENGTH_SHORT).show();
+                    }
+
                 }
                 default:
                     break;
@@ -726,6 +757,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
         recyclerviewPoiHistory.setAdapter(poiHistoryAdapter);
         poiHistoryAdapter.setOnClickListener(this);
         beginNavgation = (Button)findViewById(R.id.begin_guide_icon);
+        openRouteCollect = (Button)findViewById(R.id.open_route_collect);
     }
 
 
@@ -849,6 +881,13 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
             enNode = PlanNode.withLocation(pEnd);
 
         }
+        else if(actionId!=null&&actionId.equals("2")&&isRouteCollect)
+        {
+            LatLng pBegin = new LatLng(beginLatitude,beginLogitude);
+            LatLng pEnd = new LatLng(endLatitude,endLogitude);
+            stNode = PlanNode.withLocation(pBegin);
+            enNode = PlanNode.withLocation(pEnd);
+        }
         else {
             if (begin.equals("我的位置")) {
                 LatLng p = new LatLng(nlocation.getLatitude(), nlocation.getLongitude());
@@ -882,6 +921,13 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
         if(actionId!=null&&actionId.equals("1")&&isLocationSpot)
         {
             LatLng pBegin = new LatLng(nlocation.getLatitude(),nlocation.getLongitude());
+            LatLng pEnd = new LatLng(endLatitude,endLogitude);
+            stNode = PlanNode.withLocation(pBegin);
+            enNode = PlanNode.withLocation(pEnd);
+        }
+        else if(actionId!=null&&actionId.equals("2")&&isRouteCollect)
+        {
+            LatLng pBegin = new LatLng(beginLatitude,beginLogitude);
             LatLng pEnd = new LatLng(endLatitude,endLogitude);
             stNode = PlanNode.withLocation(pBegin);
             enNode = PlanNode.withLocation(pEnd);
@@ -972,6 +1018,9 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
                 for (int i = 0; i < result.getRouteLines().size(); i++) {
                     route = result.getRouteLines().get(i);
                     Date dt = new Date();
+
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    String dateNowStr = sdf.format(dt);
                     double bla = route.getStarting().getLocation().latitude;
                     double blo = route.getStarting().getLocation().longitude;
                     double ela = route.getTerminal().getLocation().latitude;
@@ -985,7 +1034,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
                         endName="我的位置";
                     }
 
-                    RouteColloctionItem routeItem = new RouteColloctionItem(userAccount,"骑行",dt.toString(),beginName,endName,route.getDuration() / 60,route.getDistance(),bla,blo,ela,elo);
+                    RouteColloctionItem routeItem = new RouteColloctionItem(userAccount,"步行",dateNowStr,beginName,endName,route.getDuration() / 60,route.getDistance(),bla,blo,ela,elo);
                     routeList.add(routeItem);
                     listPoint = 0;
                 }
@@ -1005,6 +1054,8 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
                 Toast.makeText(NavigationActivity.this, "找到合适步行路径1条", Toast.LENGTH_SHORT).show();
                 route = result.getRouteLines().get(0);
                 Date dt = new Date();
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                String dateNowStr = sdf.format(dt);
                 double bla = route.getStarting().getLocation().latitude;
                 double blo = route.getStarting().getLocation().longitude;
                 double ela = route.getTerminal().getLocation().latitude;
@@ -1018,7 +1069,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
                     endName="我的位置";
                 }
 
-                RouteColloctionItem routeItem = new RouteColloctionItem(userAccount,"骑行",dt.toString(),beginName,endName,route.getDuration() / 60,route.getDistance(),bla,blo,ela,elo);
+                RouteColloctionItem routeItem = new RouteColloctionItem(userAccount,"步行",dateNowStr,beginName,endName,route.getDuration() / 60,route.getDistance(),bla,blo,ela,elo);
 
                 routeList.add(routeItem);
                 Log.d("用户",routeItem.getUserAccount());
@@ -1087,6 +1138,8 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
 
                     route = result.getRouteLines().get(i);
                     Date dt = new Date();
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    String dateNowStr = sdf.format(dt);
                     double bla = route.getStarting().getLocation().latitude;
                     double blo = route.getStarting().getLocation().longitude;
                     double ela = route.getTerminal().getLocation().latitude;
@@ -1100,7 +1153,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
                         endName="我的位置";
                     }
 
-                    RouteColloctionItem routeItem = new RouteColloctionItem(userAccount,"骑行",dt.toString(),beginName,endName,route.getDuration() / 60,route.getDistance(),bla,blo,ela,elo);
+                    RouteColloctionItem routeItem = new RouteColloctionItem(userAccount,"骑行",dateNowStr,beginName,endName,route.getDuration() / 60,route.getDistance(),bla,blo,ela,elo);
                     routeList.add(routeItem);
                     listPoint = 0;
                 }
@@ -1119,6 +1172,8 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
                 Toast.makeText(NavigationActivity.this, "找到合适骑行路径1条", Toast.LENGTH_SHORT).show();
                 route = result.getRouteLines().get(0);
                 Date dt = new Date();
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                String dateNowStr = sdf.format(dt);
                 double bla = route.getStarting().getLocation().latitude;
                 double blo = route.getStarting().getLocation().longitude;
                 double ela = route.getTerminal().getLocation().latitude;
@@ -1131,7 +1186,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
                 {
                     endName="我的位置";
                 }
-                RouteColloctionItem routeItem = new RouteColloctionItem(userAccount,"骑行",dt.toString(),beginName,endName,route.getDuration() / 60,route.getDistance(),bla,blo,ela,elo);
+                RouteColloctionItem routeItem = new RouteColloctionItem(userAccount,"骑行",dateNowStr,beginName,endName,route.getDuration() / 60,route.getDistance(),bla,blo,ela,elo);
                 routeList.add(routeItem);
                 costTimeText.setText(String.valueOf(route.getDuration() / 60) + "分钟");
                 distanceText.setText(String.valueOf(route.getDistance()) + "米");
