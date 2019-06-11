@@ -70,6 +70,7 @@ public class BookmarksActivity extends AppCompatActivity {
     //出发地经纬度，注意类型
     private double[] departLaitudeArray;
 
+
     private double[] departLongitudeArray;
     //目的地经纬度
     private double[] destinationLatitudeArray;
@@ -202,15 +203,17 @@ public class BookmarksActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
                     ContactInfo ci = contactInfoList.get(position);
+                    int realPosition = intRecordNumber-position-1;
                     Intent intent = new Intent(BookmarksActivity.this, NavigationActivity.class);
                     intent.putExtra("action","2");
                     intent.putExtra("beginName",ci.departName);
                     intent.putExtra("endName",ci.destination);
-                    intent.putExtra("beginLatitude",departLaitudeArray[position]);
-                    intent.putExtra("beginLogitude",departLongitudeArray[position]);
-                    intent.putExtra("endLatitude",destinationLatitudeArray[position]);
-                    intent.putExtra("endLogitude",departLongitudeArray[position]);
+                    intent.putExtra("beginLatitude",departLaitudeArray[realPosition]);
+                    intent.putExtra("beginLogitude",departLongitudeArray[realPosition]);
+                    intent.putExtra("endLatitude",destinationLatitudeArray[realPosition]);
+                    intent.putExtra("endLogitude",destinationLongitudeArray[realPosition]);
                     startActivity(intent);
+                    finish();
                 }
             });
         }

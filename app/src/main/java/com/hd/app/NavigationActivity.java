@@ -343,7 +343,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
             //从路径收藏夹打开路径规划
             actionId = intent.getStringExtra("action");
             beginLatitude = intent.getDoubleExtra("beginLatitude",0.0000000000);
-            Log.d("lala起点纬度",String.valueOf(beginLatitude));
+            Log.d("起点纬度",String.valueOf(beginLatitude));
             beginLogitude = intent.getDoubleExtra("beginLogitude",0.0000000000);
             endLatitude = intent.getDoubleExtra("endLatitude",0.0000000000);
             endLogitude = intent.getDoubleExtra("endLogitude",0.0000000000);
@@ -658,7 +658,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
                 try {
                     ConnectTool connectTool = new ConnectTool();//建立连接
                     String temp=connectTool.routeCollectRequest(rt);
-                    Log.d("测试起点纬度", String.valueOf(rt.getBeginLatitude()));
+                    Log.d("登录标识", temp);
                     JSONObject jsonObject = new JSONObject(temp);
                     collectCallback = jsonObject.getString("msg");
 
