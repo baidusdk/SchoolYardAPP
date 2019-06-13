@@ -74,13 +74,13 @@ public class MainActivity extends AppCompatActivity {
     private TextView userNumText;
     private SharedPreferences pref;
     private String userAccount;
-    private Button routeOpen;
+    private CardView routeOpen;
     private Button personList;
     private EditText searchContent;
     private Button search;
     private NavigationView navigationView;
     private DrawerLayout mDrawerLayout;
-    private  Button locationButton;
+    private  CardView locationButton;
     private Button follow_icon;
     private Button normal_icon;
     private CheckBox spotOpenCheck;
@@ -275,7 +275,7 @@ public class MainActivity extends AppCompatActivity {
         markerInitProgress = (ProgressBar)findViewById(R.id.marker_init_progress);
         BaiduMapOptions options = new BaiduMapOptions();
         //初始化控件
-        routeOpen = (Button)findViewById(R.id.route_icon);
+        routeOpen = (CardView)findViewById(R.id.route_icon);
         normal_icon = (Button)findViewById(R.id.icon_normal);
         follow_icon = (Button)findViewById(R.id.icon_follow);
         personList = (Button) findViewById(R.id.person_icon);
@@ -293,7 +293,7 @@ public class MainActivity extends AppCompatActivity {
         mDrawerLayout = (DrawerLayout) findViewById(R.id.main_drawer_layout);
         mMapView = (MapView) findViewById(R.id.bmapView);
 //        myLocationConfiguration = new MyLocationConfiguration(MyLocationConfiguration.LocationMode.COMPASS,true,);
-        locationButton = (Button)findViewById(R.id.locotion_icon);
+        locationButton = (CardView) findViewById(R.id.location_icon);
         spotOpenCheck = (CheckBox)findViewById(R.id.spot_open_icon);
         indoorOpenCheck = (CheckBox)findViewById(R.id.indoor_open_icon);
 
@@ -511,6 +511,32 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
+        mDrawerLayout.addDrawerListener(new DrawerLayout.DrawerListener() {
+            @Override
+            public void onDrawerSlide(View drawerView, float slideOffset) {
+                /**
+                 * 抽屉滑动时，调用此方法
+                 * */
+            }
+
+            @Override
+            public void onDrawerOpened(View drawerView) {
+                personList.setBackgroundResource(R.drawable.person_icon);
+            }
+
+            @Override
+            public void onDrawerClosed(View drawerView) {
+                personList.setBackgroundResource(R.drawable.person_notselect);
+            }
+
+            @Override
+            public void onDrawerStateChanged(int newState) {
+                /**
+                 * 抽屉状态改变时，调用此方法
+                 * */
+            }
+        });
+
 
         personList.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -520,12 +546,18 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        navigationView.setCheckedItem(R.id.suggestion_icon);
+        navigationView.setCheckedItem(R.id.full_concrete_icon);
         navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
                 switch (menuItem.getItemId())
                 {
+                    case R.id.full_concrete_icon:
+                    {
+                        Intent intent = new Intent(MainActivity.this,PanoramaActivity.class);
+                        startActivity(intent);
+                        break;
+                    }
                     case R.id.log_off_icon:
                     {
                         Intent intent = new Intent(MainActivity.this,LoginActivity.class);
@@ -640,8 +672,8 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 if(mCurrentMode == MyLocationConfiguration.LocationMode.FOLLOWING)
                 {
-                    normal_icon.setBackgroundColor(getResources().getColor(R.color.appBlue));
-                    follow_icon.setBackgroundColor(getResources().getColor(R.color.white));
+                    normal_icon.setBackgroundResource(R.drawable.normal_select);
+                    follow_icon.setBackgroundResource(R.drawable.follow_notselect);
                     mCurrentMode = MyLocationConfiguration.LocationMode.NORMAL;
                     myLocationConfiguration = new MyLocationConfiguration(mCurrentMode,true,null);
                     mBaiduMap.setMyLocationConfiguration(myLocationConfiguration);
@@ -653,8 +685,8 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 if(mCurrentMode == MyLocationConfiguration.LocationMode.NORMAL)
                 {
-                    normal_icon.setBackgroundColor(getResources().getColor(R.color.white));
-                    follow_icon.setBackgroundColor(getResources().getColor(R.color.appBlue));
+                    normal_icon.setBackgroundResource(R.drawable.normal_notselect);
+                    follow_icon.setBackgroundResource(R.drawable.follow_select);
                     mCurrentMode = MyLocationConfiguration.LocationMode.FOLLOWING;
                     myLocationConfiguration = new MyLocationConfiguration(mCurrentMode,true,null);
                     mBaiduMap.setMyLocationConfiguration(myLocationConfiguration);
