@@ -2,6 +2,7 @@ package com.hd.app;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -17,6 +18,7 @@ import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
@@ -772,6 +774,34 @@ public class MainActivity extends AppCompatActivity {
          */
         @Override
         public boolean onMapPoiClick(MapPoi mapPoi) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setTitle("系统提示");
+            builder.setMessage("您要去往 "+mapPoi.getName()+" 吗？");
+            builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    Intent intent = new Intent(MainActivity.this,NavigationActivity.class);
+                    intent.putExtra("action","1");
+                    intent.putExtra("latitude",mapPoi.getPosition().latitude);
+                    intent.putExtra("logitude",mapPoi.getPosition().longitude);
+                    intent.putExtra("destinationName",mapPoi.getName());
+                    startActivity(intent);
+                }
+            });
+
+            //取消
+            builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+// TODO Auto-generated method stub
+                    return;
+                }
+            });
+
+            builder.show();
+
 
             return false;
         }
