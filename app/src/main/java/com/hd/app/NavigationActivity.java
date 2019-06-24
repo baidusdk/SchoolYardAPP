@@ -307,6 +307,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
     private BikeNaviLaunchParam bikeParam;
     private WalkNaviLaunchParam walkParam;
 
+    private boolean isDoingCollect = true;
 
 
     @Override
@@ -348,9 +349,8 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
         }
         if(intent.getStringExtra("action").equals("2"))
         {
+            isDoingCollect = false;
             //从路径收藏夹打开路径规划
-
-
             actionId = intent.getStringExtra("action");
             beginLatitude = intent.getDoubleExtra("beginLatitude",0.0000000000);
             Log.d("起点纬度",String.valueOf(beginLatitude));
@@ -362,6 +362,8 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
             String cend = intent.getStringExtra("endName");
             start_place_edit.setText(cbegin);
             destination_edit.setText(cend);
+
+          //  routeCollectBox.setClickable(false);
             switch (mode)
             {
                 case "步行":
@@ -381,7 +383,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
                 default:
                     break;
             }
-
+            routeCollectBox.setChecked(true);
         }
     }
     private void setListener() {
@@ -417,6 +419,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
             public void onClick(View v) {
 
                 walkingRoutePlan(beginLocation,endLocation);
+
             }
         });
         bikeButton.setOnClickListener(new View.OnClickListener() {
@@ -424,6 +427,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
             public void onClick(View v) {
 
                 bikingRoutePlan(beginLocation, endLocation);
+
             }
         });
         searchButton.setOnClickListener(new View.OnClickListener() {
@@ -457,13 +461,17 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
 //                    endName = myAddressName;
 //                    myAddressName = null;
                 }
-                    routeMap.setVisibility(View.VISIBLE);
+
 //                    walkButton.setBackgroundResource(R.drawable.route_mode_walk_select);
 //                    walkButton.setTextColor(getResources().getColor(R.color.white));
 //                    bikeButton.setBackgroundResource(R.drawable.route_mode_bike_notselect);
 //                    bikeButton.setTextColor(getResources().getColor(R.color.appBlue));
                     walkingRoutePlan(beginLocation, endLocation);
                     routeInformCard.setVisibility(View.VISIBLE);
+                     routeMap.setVisibility(View.VISIBLE);
+                     routeCollectBox.setClickable(true);//收藏按钮点击开放
+                    routeCollectBox.setChecked(false);//默认未收藏
+                isDoingCollect = true;
             }
         });
         chooseRouteLeft.setOnClickListener(new View.OnClickListener() {
@@ -514,7 +522,8 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if(isChecked)
                 {
-                    doCollectRoute();
+                    if(isDoingCollect)
+                    {doCollectRoute();}
                     routeCollectBox.setClickable(false);
                 }
 
@@ -1010,8 +1019,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
 //            nodeIndex = -1;
 //            mBtnPre.setVisibility(View.VISIBLE);
 //            mBtnNext.setVisibility(View.VISIBLE);
-            routeCollectBox.setClickable(true);//收藏按钮点击开放
-            routeCollectBox.setChecked(false);//默认未收藏
+
             Log.d("aaaaaab",String.valueOf(result.getRouteLines().size()) );
             if (result.getRouteLines().size() > 1) {
                 Toast.makeText(NavigationActivity.this, "找到合适步行路径" + String.valueOf(result.getRouteLines().size()) + "条", Toast.LENGTH_SHORT).show();
@@ -1130,8 +1138,7 @@ public class NavigationActivity extends BaseActivity implements OnGetGeoCoderRes
             return;
         }
         if (result.error == SearchResult.ERRORNO.NO_ERROR) {
-            routeCollectBox.setClickable(true);//收藏按钮点击开放
-            routeCollectBox.setChecked(false);//默认未收藏
+
 //
             if (result.getRouteLines().size() > 1) {
                 Toast.makeText(NavigationActivity.this, "找到合适骑行路径" + String.valueOf(result.getRouteLines().size()) + "条", Toast.LENGTH_SHORT).show();

@@ -301,6 +301,7 @@
                     android:layout_centerHorizontal="true"
                     android:layout_marginBottom="50dp"
                     android:background="@drawable/route_card_bk"
+                    android:alpha="0.85"
                     android:visibility="gone">
 
                     <RelativeLayout

@@ -118,7 +118,7 @@ public class ConnectTool {
     public String changePwd(PasswordChange pa)
     {
 
-        String Url ="http://47.102.156.224/api/path";
+        String Url ="http://47.102.156.224/api/reset";
         try {
             String json=g.toJson(pa);
             RequestBody body = RequestBody.create(JSON, json);
