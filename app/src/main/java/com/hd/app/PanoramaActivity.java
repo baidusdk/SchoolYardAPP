@@ -2,7 +2,9 @@ package com.hd.app;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.view.View;
 import android.webkit.WebView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 /**
@@ -13,19 +15,37 @@ public class PanoramaActivity extends AppCompatActivity {
 
 
     public static final String url = "http://yiban.fzu.edu.cn/m/pcindex.html";
-    private WebView webView ;
+    private WebView webView;
     private TextView titleName;
+    private ProgressBar webViewInitProgress;
+    private final int LOAD_WEB_VIEW = -1;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_panorama);
-        webView = (WebView)findViewById(R.id.web_view);
+        titleName = (TextView) findViewById(R.id.title_name);
+        titleName.setText("福大全景图");
+        webViewInitProgress = (ProgressBar) findViewById(R.id.web_load_progress);
+        webViewInitProgress.setVisibility(View.VISIBLE);
+        webView = (WebView) findViewById(R.id.web_view);
+        initWebView();
+        webViewInitProgress.setVisibility(View.GONE);
+    }
+
+    private void initWebView() {
         webView.getSettings().setJavaScriptEnabled(true);
         webView.loadUrl(url);
-        titleName = (TextView)findViewById(R.id.title_name);
-
-        titleName.setText("福大全景图");
     }
+
+}
+
+
+
+
+
+
+
 //
 //    @Override
 //    public boolean onKeyDown(int keyCode, KeyEvent event) {
@@ -47,4 +67,4 @@ public class PanoramaActivity extends AppCompatActivity {
 //        }
 //        return super.onKeyDown(keyCode, event);
 //    }
-}
+
