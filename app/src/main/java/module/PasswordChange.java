@@ -1,22 +1,22 @@
 package module;
 
 public class PasswordChange {
-    private String userAccount;
+    private String account;
     private String oldPassword;
     private String newPassword;
 
     public PasswordChange(String userAccount, String oldPassword, String newPassword) {
-        this.userAccount = userAccount;
+        this.account = userAccount;
         this.oldPassword = oldPassword;
         this.newPassword = newPassword;
     }
 
-    public String getUserAccount() {
-        return userAccount;
+    public String getAccount() {
+        return account;
     }
 
-    public void setUserAccount(String userAccount) {
-        this.userAccount = userAccount;
+    public void setAccount(String account) {
+        this.account = account;
     }
 
     public String getOldPassword() {

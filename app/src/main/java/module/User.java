@@ -21,6 +21,8 @@ public class User implements Serializable {
         this.userName = userName;
     }
 
+    public User(){}
+
     public void User(String tel, String passwd) {
             this.account = tel;
             this.password = passwd;

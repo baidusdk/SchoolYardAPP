@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -60,7 +61,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
         {
             Toast.makeText(ChangePasswordActivity.this,"三个输入框不能为空！",Toast.LENGTH_SHORT).show();
         }
-        else if (confirmNewPwdEdit.getText()!=newPasswordEdit.getText())
+        else if (!newPasswordEdit.getText().toString().equals(confirmNewPwdEdit.getText().toString()))
         {
             Toast.makeText(ChangePasswordActivity.this,"两次输入的新密码不同！",Toast.LENGTH_SHORT).show();
         }
@@ -83,6 +84,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
                     String temp=connectTool.changePwd(pa);
                     JSONObject jsonObject = new JSONObject(temp);
                     String s = jsonObject.getString("msg");
+                    Log.d("修改密码返回值", s);;
                     if(s.equals("success"))
                     {
                         state = 0;
@@ -116,7 +118,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
                         }
                         case 1:
                         {
-                            Toast.makeText(ChangePasswordActivity.this, "密码修改失败", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(ChangePasswordActivity.this, "密码修改失败，请检查原密码是否输入错误", Toast.LENGTH_SHORT).show();
                             break;
                         }
                         default:

@@ -8,12 +8,23 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         />
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
     <WebView
         android:id="@+id/web_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-
-
     </WebView>
+
+    <ProgressBar
+        android:id="@+id/web_load_progress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:layout_centerInParent="true"
+        style="@android:style/Widget.ProgressBar.Inverse"
+        />
+    </RelativeLayout>
 
 </LinearLayout>

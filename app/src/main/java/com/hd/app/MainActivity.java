@@ -56,6 +56,17 @@ import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.model.LatLng;
+import com.baidu.mapapi.model.LatLngBounds;
+import com.baidu.mapapi.search.core.PoiInfo;
+import com.baidu.mapapi.search.core.SearchResult;
+import com.baidu.mapapi.search.poi.OnGetPoiSearchResultListener;
+import com.baidu.mapapi.search.poi.PoiBoundSearchOption;
+import com.baidu.mapapi.search.poi.PoiDetailResult;
+import com.baidu.mapapi.search.poi.PoiDetailSearchResult;
+import com.baidu.mapapi.search.poi.PoiIndoorResult;
+import com.baidu.mapapi.search.poi.PoiNearbySearchOption;
+import com.baidu.mapapi.search.poi.PoiResult;
+import com.baidu.mapapi.search.poi.PoiSearch;
 import com.bm.library.PhotoView;
 import com.google.gson.Gson;
 
@@ -64,6 +75,7 @@ import java.util.List;
 
 import Tools.ActivityCollector;
 import adapter.FloorListAdapter;
+import apiTools.PoiOverlay;
 import de.hdodenhof.circleimageview.CircleImageView;
 import module.Building;
 import module.Spot;
@@ -82,11 +94,12 @@ public class MainActivity extends AppCompatActivity {
     private Button search;
     private NavigationView navigationView;
     private DrawerLayout mDrawerLayout;
-    private  CardView locationButton;
+    private CardView locationButton;
     private Button follow_icon;
     private Button normal_icon;
     private CheckBox spotOpenCheck;
     private CheckBox indoorOpenCheck;
+    private CheckBox searchParkingCheck;
     /**
      * 下面三个元素是室内图功能的按键
      */
@@ -140,6 +153,9 @@ public class MainActivity extends AppCompatActivity {
 
     private long mExitTime = System.currentTimeMillis();//mExitTime为系统时间
 
+    private PoiSearch poiSearch;
+    private boolean isParking = false;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -149,9 +165,10 @@ public class MainActivity extends AppCompatActivity {
         ActivityCollector.addActivity(MainActivity.this);
         Intent intent = getIntent();
         user = (User) getIntent().getSerializableExtra("user_information");
-        Log.d("用户信息传送",user.getAccount());
+        Log.d("用户信息传送", user.getAccount());
         initPermission();//静态申请手机权限
-        getSensorManager();;//初始化传感器
+        getSensorManager();
+        ;//初始化传感器
         init();//初始化控件
         initMap();//初始化地图
         //initMapMarker();//初始化景点标记
@@ -271,43 +288,44 @@ public class MainActivity extends AppCompatActivity {
     private void init() {
 
 
-
-
         //获取地图控件引用
-        markerInitProgress = (ProgressBar)findViewById(R.id.marker_init_progress);
+        markerInitProgress = (ProgressBar) findViewById(R.id.marker_init_progress);
         BaiduMapOptions options = new BaiduMapOptions();
         //初始化控件
-        routeOpen = (CardView)findViewById(R.id.route_icon);
-        normal_icon = (Button)findViewById(R.id.icon_normal);
-        follow_icon = (Button)findViewById(R.id.icon_follow);
+        routeOpen = (CardView) findViewById(R.id.route_icon);
+        normal_icon = (Button) findViewById(R.id.icon_normal);
+        follow_icon = (Button) findViewById(R.id.icon_follow);
         personList = (Button) findViewById(R.id.person_icon);
 //        searchContent = (EditText) findViewById(R.id.search_text);
 //        search = (Button) findViewById(R.id.search_icon);
 
         navigationView = (NavigationView) findViewById(R.id.nav_view);
-        View headerLayout=navigationView.getHeaderView(0);
+        View headerLayout = navigationView.getHeaderView(0);
 
-        userNumText=headerLayout.findViewById(R.id.user_num);
-        pref = getSharedPreferences("user",Context.MODE_PRIVATE);
-        userAccount = pref.getString("account","");
+        userNumText = headerLayout.findViewById(R.id.user_num);
+        pref = getSharedPreferences("user", Context.MODE_PRIVATE);
+        userAccount = pref.getString("account", "");
         userNumText.setText(userAccount);
 
         mDrawerLayout = (DrawerLayout) findViewById(R.id.main_drawer_layout);
         mMapView = (MapView) findViewById(R.id.bmapView);
 //        myLocationConfiguration = new MyLocationConfiguration(MyLocationConfiguration.LocationMode.COMPASS,true,);
         locationButton = (CardView) findViewById(R.id.location_icon);
-        spotOpenCheck = (CheckBox)findViewById(R.id.spot_open_icon);
-        indoorOpenCheck = (CheckBox)findViewById(R.id.indoor_open_icon);
+        spotOpenCheck = (CheckBox) findViewById(R.id.spot_open_icon);
+        indoorOpenCheck = (CheckBox) findViewById(R.id.indoor_open_icon);
+        searchParkingCheck = (CheckBox)findViewById(R.id.search_parking);
 
-        cardView = (CardView)findViewById(R.id.floor_card);
-        closeFloorCard = (Button)findViewById(R.id.close_floorView);
-        buildingNameText = (TextView)findViewById(R.id.building_name);
-        floorImg = (PhotoView)findViewById(R.id.floor_img);
+        cardView = (CardView) findViewById(R.id.floor_card);
+        closeFloorCard = (Button) findViewById(R.id.close_floorView);
+        buildingNameText = (TextView) findViewById(R.id.building_name);
+        floorImg = (PhotoView) findViewById(R.id.floor_img);
         floorImg.enable();
 
 
         initBuildingList();
-
+        poiSearch = PoiSearch.newInstance();
+        // 设置检索监听器
+        poiSearch.setOnGetPoiSearchResultListener(poiSearchListener);
 
 
 //        PhotoView ph = (PhotoView)findViewById(R.id.floor_img);
@@ -317,66 +335,58 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void initBuildingList()
-    {
-        LatLng p =null;
+    private void initBuildingList() {
+        LatLng p = null;
         Integer[] temp = null;
         Building b = null;
 
-        p = new LatLng(26.064807,119.204324);
-        temp = new Integer[]{R.mipmap.library_f5,R.mipmap.library_f4,R.mipmap.library_f3,R.mipmap.library_f2,R.mipmap.library_f1,
+        p = new LatLng(26.064807, 119.204324);
+        temp = new Integer[]{R.mipmap.library_f5, R.mipmap.library_f4, R.mipmap.library_f3, R.mipmap.library_f2, R.mipmap.library_f1,
         };
-        b = new Building("图书馆",p,0,5,temp);
+        b = new Building("图书馆", p, 0, 5, temp);
         buildingList.add(b);
 
 
-        p = new LatLng(26.064373,119.201957);//西三
-        temp = new Integer[]{R.mipmap.west_3_f5,R.mipmap.west_3_f4,R.mipmap.west_3_f3,R.mipmap.west_3_f2,R.mipmap.west_3_f1};
-        b = new Building("36栋西3教学楼",p,0,5,temp);
+        p = new LatLng(26.064373, 119.201957);//西三
+        temp = new Integer[]{R.mipmap.west_3_f5, R.mipmap.west_3_f4, R.mipmap.west_3_f3, R.mipmap.west_3_f2, R.mipmap.west_3_f1};
+        b = new Building("36栋西3教学楼", p, 0, 5, temp);
         buildingList.add(b);
 
 
-
-        p = new LatLng(26.064896,119.201988);//西二
-        temp = new Integer[]{R.mipmap.west_2_f5,R.mipmap.west_2_f4,R.mipmap.west_2_f3,R.mipmap.west_2_f2,R.mipmap.west_2_f1};
-        b = new Building("37栋西2教学楼",p,0,5,temp);
+        p = new LatLng(26.064896, 119.201988);//西二
+        temp = new Integer[]{R.mipmap.west_2_f5, R.mipmap.west_2_f4, R.mipmap.west_2_f3, R.mipmap.west_2_f2, R.mipmap.west_2_f1};
+        b = new Building("37栋西2教学楼", p, 0, 5, temp);
         buildingList.add(b);
 
-        p = new LatLng(26.065302,119.202029);//西一
-        temp = new Integer[]{R.mipmap.west_1_f5,R.mipmap.west_1_f4,R.mipmap.west_1_f3,R.mipmap.west_1_f2,R.mipmap.west_1_f1};
-        b = new Building("38栋西1教学楼",p,0,5,temp);
+        p = new LatLng(26.065302, 119.202029);//西一
+        temp = new Integer[]{R.mipmap.west_1_f5, R.mipmap.west_1_f4, R.mipmap.west_1_f3, R.mipmap.west_1_f2, R.mipmap.west_1_f1};
+        b = new Building("38栋西1教学楼", p, 0, 5, temp);
         buildingList.add(b);
 
-        p = new LatLng(26.065983,119.201944);//中楼
-        temp = new Integer[]{R.mipmap.middle_f5,R.mipmap.middle_f4,R.mipmap.middle_f3,R.mipmap.middle_f2,R.mipmap.middle_f1};
-        b = new Building("39栋中教学楼",p,0,5,temp);
-        buildingList.add(b);
-
-
-
-        p = new LatLng(26.066259,119.202595);//东一
-        temp = new Integer[]{R.mipmap.east_1_f5,R.mipmap.east_1_f4,R.mipmap.east_1_f3,R.mipmap.east_1_f2,R.mipmap.east_1_f1};
-        b = new Building("40栋东1教学楼",p,0,5,temp);
+        p = new LatLng(26.065983, 119.201944);//中楼
+        temp = new Integer[]{R.mipmap.middle_f5, R.mipmap.middle_f4, R.mipmap.middle_f3, R.mipmap.middle_f2, R.mipmap.middle_f1};
+        b = new Building("39栋中教学楼", p, 0, 5, temp);
         buildingList.add(b);
 
 
-        p = new LatLng(26.066953,119.203489);//东二
-        temp = new Integer[]{R.mipmap.east_2_f5,R.mipmap.east_2_f4,R.mipmap.east_2_f3,R.mipmap.east_2_f2,R.mipmap.east_2_f1};
-        b = new Building("41栋东2教学楼",p,0,5,temp);
-        buildingList.add(b);
-
-        p = new LatLng(26.066689,119.204279);//东三
-        temp = new Integer[]{R.mipmap.east_3_f5,R.mipmap.east_3_f4,R.mipmap.east_3_f3,R.mipmap.east_3_f2,R.mipmap.east_3_f1};
-        b = new Building("42栋东3教学楼",p,0,5,temp);
+        p = new LatLng(26.066259, 119.202595);//东一
+        temp = new Integer[]{R.mipmap.east_1_f5, R.mipmap.east_1_f4, R.mipmap.east_1_f3, R.mipmap.east_1_f2, R.mipmap.east_1_f1};
+        b = new Building("40栋东1教学楼", p, 0, 5, temp);
         buildingList.add(b);
 
 
+        p = new LatLng(26.066953, 119.203489);//东二
+        temp = new Integer[]{R.mipmap.east_2_f5, R.mipmap.east_2_f4, R.mipmap.east_2_f3, R.mipmap.east_2_f2, R.mipmap.east_2_f1};
+        b = new Building("41栋东2教学楼", p, 0, 5, temp);
+        buildingList.add(b);
 
-
+        p = new LatLng(26.066689, 119.204279);//东三
+        temp = new Integer[]{R.mipmap.east_3_f5, R.mipmap.east_3_f4, R.mipmap.east_3_f3, R.mipmap.east_3_f2, R.mipmap.east_3_f1};
+        b = new Building("42栋东3教学楼", p, 0, 5, temp);
+        buildingList.add(b);
 
 
     }
-
 
 
     /**
@@ -391,12 +401,12 @@ public class MainActivity extends AppCompatActivity {
         builder.zoom(18.0f);//定位初始精度50米
         mBaiduMap = mMapView.getMap();//获取地图实例
         float zoom = mBaiduMap.getMapStatus().zoom;
-       // mapView.showZoomControls(true);
+        // mapView.showZoomControls(true);
         mBaiduMap.setMapStatus(MapStatusUpdateFactory.newMapStatus(builder.build()));//设置地图初始状态
         // 开启定位图层，一定不要少了这句，否则对在地图的设置、绘制定位点将无效
         mBaiduMap.setMyLocationEnabled(true); //定位初始化
         //mBaiduMap.setIndoorEnable(true);//打开室内图
-        myLocationConfiguration = new MyLocationConfiguration(mCurrentMode,true,null);
+        myLocationConfiguration = new MyLocationConfiguration(mCurrentMode, true, null);
         mBaiduMap.setMyLocationConfiguration(myLocationConfiguration);
         mLocationClient = new LocationClient(getApplicationContext());
         //通过LocationClientOption设置LocationClient相关参数
@@ -405,12 +415,12 @@ public class MainActivity extends AppCompatActivity {
         option.setCoorType("bd09ll"); // 设置坐标类型
         option.setScanSpan(1000);//定位的时间间隔//毫秒
         option.setNeedDeviceDirect(true);
-       // option.setLocationMode(LocationClientOption.LocationMode.Hight_Accuracy);//开启高精度定位
+        // option.setLocationMode(LocationClientOption.LocationMode.Hight_Accuracy);//开启高精度定位
         //设置locationClientOption
         mLocationClient.setLocOption(option);
 
         //注册LocationListener监听器
-        Log.d("定位测试","执行过这里");
+        Log.d("定位测试", "执行过这里");
         MyLocationListener myLocationListener = new MyLocationListener();
         mLocationClient.registerLocationListener(myLocationListener);
         //开启地图定位图层
@@ -419,24 +429,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
-
-    private void initSpotList()
-    {
+    private void initSpotList() {
         Spot spot = null;
-        spot = new Spot("1","福州大学福友阁",26.059707,119.206875,R.mipmap.fuyouge1);
+        spot = new Spot("1", "福州大学福友阁", 26.059707, 119.206875, R.mipmap.fuyouge1);
         spotList.add(spot);//福友阁
 
-        spot = new Spot("2","图书馆",26.064811,119.204315,R.mipmap.library1);
+        spot = new Spot("2", "图书馆", 26.064811, 119.204315, R.mipmap.library1);
         spotList.add(spot);//图书馆
 
-        spot = new Spot("3","宏晖文体综合馆",26.057833,119.203511,R.mipmap.honghui1);
+        spot = new Spot("3", "宏晖文体综合馆", 26.057833, 119.203511, R.mipmap.honghui1);
         spotList.add(spot);//宏晖文体综合馆
 
-        spot = new Spot("4","青春广场",26.062551,119.198013,R.mipmap.qcgc1);
+        spot = new Spot("4", "青春广场", 26.062551, 119.198013, R.mipmap.qcgc1);
         spotList.add(spot);//青春广场
 
-        spot = new Spot("5","素质拓展中心",26.062596,119.202128,R.mipmap.sutuo1);
+        spot = new Spot("5", "素质拓展中心", 26.062596, 119.202128, R.mipmap.sutuo1);
         spotList.add(spot);//素拓
 
 
@@ -466,35 +473,34 @@ public class MainActivity extends AppCompatActivity {
         initSpotList();
 
         //spotList.add(spot2);
-       for(Spot spot : spotList)
-       {
+        for (Spot spot : spotList) {
 
-           View markerView = LayoutInflater.from(this).inflate(R.layout.marker_background, null);
-           CircleImageView icon = (CircleImageView) markerView.findViewById(R.id.marker_item_icon);
-           //定义Maker坐标点
-           Bitmap bt = BitmapFactory.decodeResource(getResources(), spot.getImgID());
-           icon.setImageBitmap(bt);
-           LatLng point = new LatLng(spot.getLatitude(), spot.getLongitude());
+            View markerView = LayoutInflater.from(this).inflate(R.layout.marker_background, null);
+            CircleImageView icon = (CircleImageView) markerView.findViewById(R.id.marker_item_icon);
+            //定义Maker坐标点
+            Bitmap bt = BitmapFactory.decodeResource(getResources(), spot.getImgID());
+            icon.setImageBitmap(bt);
+            LatLng point = new LatLng(spot.getLatitude(), spot.getLongitude());
             //构建Marker图标
-           BitmapDescriptor bitmap = BitmapDescriptorFactory
-                   .fromView(markerView);
-           Log.d("marker测试", "initMapMarker:123 ");
-        //构建MarkerOption，用于在地图上添加Marker
-           OverlayOptions option = new MarkerOptions()
-                   .position(point) //必传参数
-                   .icon(bitmap) //必传参数
-        //设置平贴地图，在地图中双指下拉查看效果
-                   .flat(false)
-                   .perspective(true)
-                   .anchor((float)0.5,(float)0.5);
-        //在地图上添加Marker，并显示
-           Bundle mBundle = new Bundle();
-           mBundle.putString("spotname", spot.getSpotName());
-           mBundle.putString("type","0");
-           Marker marker =(Marker)mBaiduMap.addOverlay(option);
-           marker.setExtraInfo(mBundle);
-           spotMarkerList.add(marker); //将marker以id的区别加以管理
-       }
+            BitmapDescriptor bitmap = BitmapDescriptorFactory
+                    .fromView(markerView);
+            Log.d("marker测试", "initMapMarker:123 ");
+            //构建MarkerOption，用于在地图上添加Marker
+            OverlayOptions option = new MarkerOptions()
+                    .position(point) //必传参数
+                    .icon(bitmap) //必传参数
+                    //设置平贴地图，在地图中双指下拉查看效果
+                    .flat(false)
+                    .perspective(true)
+                    .anchor((float) 0.5, (float) 0.5);
+            //在地图上添加Marker，并显示
+            Bundle mBundle = new Bundle();
+            mBundle.putString("spotname", spot.getSpotName());
+            mBundle.putString("type", "0");
+            Marker marker = (Marker) mBaiduMap.addOverlay(option);
+            marker.setExtraInfo(mBundle);
+            spotMarkerList.add(marker); //将marker以id的区别加以管理
+        }
 
     }
 
@@ -506,8 +512,8 @@ public class MainActivity extends AppCompatActivity {
         routeOpen.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this,NavigationActivity.class);
-                intent.putExtra("action","0");
+                Intent intent = new Intent(MainActivity.this, NavigationActivity.class);
+                intent.putExtra("action", "0");
                 startActivity(intent);
             }
         });
@@ -544,7 +550,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 mDrawerLayout.openDrawer(Gravity.LEFT);
-                
+
             }
         });
 
@@ -552,30 +558,25 @@ public class MainActivity extends AppCompatActivity {
         navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
-                switch (menuItem.getItemId())
-                {
-                    case R.id.full_concrete_icon:
-                    {
-                        Intent intent = new Intent(MainActivity.this,PanoramaActivity.class);
+                switch (menuItem.getItemId()) {
+                    case R.id.full_concrete_icon: {
+                        Intent intent = new Intent(MainActivity.this, PanoramaActivity.class);
                         startActivity(intent);
                         break;
                     }
-                    case R.id.log_off_icon:
-                    {
-                        Intent intent = new Intent(MainActivity.this,LoginActivity.class);
+                    case R.id.log_off_icon: {
+                        Intent intent = new Intent(MainActivity.this, LoginActivity.class);
                         ActivityCollector.finishAll();
                         startActivity(intent);
                         break;
                     }
-                    case R.id.suggestion_icon:
-                    {
-                        Intent intent = new Intent(MainActivity.this,SuggestionActivity.class);
+                    case R.id.suggestion_icon: {
+                        Intent intent = new Intent(MainActivity.this, SuggestionActivity.class);
                         startActivity(intent);
                         break;
                     }
-                    case R.id.set_icon:
-                    {
-                        Intent intent = new Intent(MainActivity.this,SettingsActivity.class);
+                    case R.id.set_icon: {
+                        Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
                         startActivity(intent);
                         break;
                     }
@@ -588,7 +589,7 @@ public class MainActivity extends AppCompatActivity {
         locationButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(nlocation!=null) {
+                if (nlocation != null) {
                     LatLng ll = new LatLng(nlocation.getLatitude(), nlocation.getLongitude());
                     MapStatusUpdate update = MapStatusUpdateFactory.newLatLng(ll);
                     mBaiduMap.animateMapStatus(update);
@@ -627,8 +628,16 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onMarkerClick(Marker marker) {
 
+
+
                 Bundle bundle = marker.getExtraInfo();
-                if(bundle.getString("type").equals("0")) {
+
+                if(bundle.getString("type")==null)
+                {
+                    return false;
+                }
+
+                if (bundle.getString("type").equals("0")) {
                     String spotName = bundle.getString("spotname");
                     Intent intent = new Intent(MainActivity.this, SpotConcreteActivity.class);
                     intent.putExtra("spotname", spotName);//用户信息传入下一个界面
@@ -637,8 +646,7 @@ public class MainActivity extends AppCompatActivity {
                     startActivity(intent);
                 }
 
-                if(bundle.getString("type").equals("1"))
-                {
+                if (bundle.getString("type").equals("1")) {
 //                    String poiName =mapPoi.getName(); //名称
 //                    LatLng point = mapPoi.getPosition(); //坐标
                     String buildingName = bundle.getString("buildingName");
@@ -646,11 +654,10 @@ public class MainActivity extends AppCompatActivity {
                     LinearLayoutManager layoutManager = new LinearLayoutManager(MainActivity.this);
                     recyclerView.setLayoutManager(layoutManager);
                     boolean flag = false;
-                    for(int i = 0 ;i<buildingList.size();i++)
-                    {
+                    for (int i = 0; i < buildingList.size(); i++) {
                         Building b = buildingList.get(i);
 
-                        if(b.getBuildingName().equals(buildingName)) {
+                        if (b.getBuildingName().equals(buildingName)) {
                             floorImg.setImageResource(R.drawable.select_floor_back);
                             Log.d("地理位置", b.getBuildingName());
                             FloorListAdapter adapter = new FloorListAdapter(b.getFloorList());
@@ -661,9 +668,8 @@ public class MainActivity extends AppCompatActivity {
                             break;
                         }
                     }
-                    if(!flag)
-                    {
-                        Toast.makeText(MainActivity.this,"当前地点尚未加入室内图",Toast.LENGTH_SHORT).show();
+                    if (!flag) {
+                        Toast.makeText(MainActivity.this, "当前地点尚未加入室内图", Toast.LENGTH_SHORT).show();
                     }
                 }
                 return false;
@@ -672,12 +678,11 @@ public class MainActivity extends AppCompatActivity {
         normal_icon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(mCurrentMode == MyLocationConfiguration.LocationMode.FOLLOWING)
-                {
+                if (mCurrentMode == MyLocationConfiguration.LocationMode.FOLLOWING) {
                     normal_icon.setBackgroundResource(R.drawable.normal_select);
                     follow_icon.setBackgroundResource(R.drawable.follow_notselect);
                     mCurrentMode = MyLocationConfiguration.LocationMode.NORMAL;
-                    myLocationConfiguration = new MyLocationConfiguration(mCurrentMode,true,null);
+                    myLocationConfiguration = new MyLocationConfiguration(mCurrentMode, true, null);
                     mBaiduMap.setMyLocationConfiguration(myLocationConfiguration);
                 }
             }
@@ -685,12 +690,11 @@ public class MainActivity extends AppCompatActivity {
         follow_icon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(mCurrentMode == MyLocationConfiguration.LocationMode.NORMAL)
-                {
+                if (mCurrentMode == MyLocationConfiguration.LocationMode.NORMAL) {
                     normal_icon.setBackgroundResource(R.drawable.normal_notselect);
                     follow_icon.setBackgroundResource(R.drawable.follow_select);
                     mCurrentMode = MyLocationConfiguration.LocationMode.FOLLOWING;
-                    myLocationConfiguration = new MyLocationConfiguration(mCurrentMode,true,null);
+                    myLocationConfiguration = new MyLocationConfiguration(mCurrentMode, true, null);
                     mBaiduMap.setMyLocationConfiguration(myLocationConfiguration);
                 }
 
@@ -699,16 +703,13 @@ public class MainActivity extends AppCompatActivity {
         spotOpenCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if(isChecked)
-                {
+                if (isChecked) {
                     spotOpenCheck.setChecked(true);
                     markerInitProgress.setVisibility(View.VISIBLE);
                     initMapMarker();
                     markerInitProgress.setVisibility(View.GONE);
 
-                }
-                else
-                {
+                } else {
                     spotOpenCheck.setChecked(false);
                     markerInitProgress.setVisibility(View.VISIBLE);
                     removeMarker();
@@ -717,21 +718,36 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-        indoorOpenCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        searchParkingCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if(isChecked)
                 {
-                    float zoom = mBaiduMap.getMapStatus().zoom;
-                        indoorOpenCheck.setChecked(true);
-                        markerInitProgress.setVisibility(View.VISIBLE);
-                        initIndoorMarker();
-                        markerInitProgress.setVisibility(View.GONE);
-
-
+                    markerInitProgress.setVisibility(View.VISIBLE);
+                    Toast.makeText(MainActivity.this,"为您推荐校园附近的合适停车场",Toast.LENGTH_SHORT).show();
+                    boundSearch(0);//发起停车场检索
+                    markerInitProgress.setVisibility(View.GONE);
                 }
-                else
-                {
+                else {
+                    if(poiOverlay!=null)
+                    {
+                        poiOverlay.removeFromMap();
+                    }
+                }
+            }
+        });
+        indoorOpenCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    float zoom = mBaiduMap.getMapStatus().zoom;
+                    indoorOpenCheck.setChecked(true);
+                    markerInitProgress.setVisibility(View.VISIBLE);
+                    initIndoorMarker();
+                    markerInitProgress.setVisibility(View.GONE);
+
+
+                } else {
                     indoorOpenCheck.setChecked(false);
                     markerInitProgress.setVisibility(View.VISIBLE);
                     removeIndoorMarker();
@@ -761,12 +777,12 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onMapClick(LatLng point) {
 
-            if(cardView.getVisibility()==View.VISIBLE)
-            {
+            if (cardView.getVisibility() == View.VISIBLE) {
                 cardView.setVisibility(View.GONE);
             }
 
         }
+
         /**
          * 地图内 Poi 单击事件回调函数
          *
@@ -776,16 +792,16 @@ public class MainActivity extends AppCompatActivity {
         public boolean onMapPoiClick(MapPoi mapPoi) {
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
             builder.setTitle("系统提示");
-            builder.setMessage("您要去往 "+mapPoi.getName()+" 吗？");
+            builder.setMessage("您要去往 " + mapPoi.getName() + " 吗？");
             builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
 
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    Intent intent = new Intent(MainActivity.this,NavigationActivity.class);
-                    intent.putExtra("action","1");
-                    intent.putExtra("latitude",mapPoi.getPosition().latitude);
-                    intent.putExtra("logitude",mapPoi.getPosition().longitude);
-                    intent.putExtra("destinationName",mapPoi.getName());
+                    Intent intent = new Intent(MainActivity.this, NavigationActivity.class);
+                    intent.putExtra("action", "1");
+                    intent.putExtra("latitude", mapPoi.getPosition().latitude);
+                    intent.putExtra("logitude", mapPoi.getPosition().longitude);
+                    intent.putExtra("destinationName", mapPoi.getName());
                     startActivity(intent);
                 }
             });
@@ -807,16 +823,13 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
-
     };
 
-    private void initIndoorMarker()
-    {
-        for(Building b : buildingList)
-        {
+    private void initIndoorMarker() {
+        for (Building b : buildingList) {
             BitmapDescriptor bitmap = BitmapDescriptorFactory
                     .fromResource(R.drawable.indoor_marker);
-            LatLng point = new LatLng(b.getPoint().latitude,b.getPoint().longitude);
+            LatLng point = new LatLng(b.getPoint().latitude, b.getPoint().longitude);
             //构建MarkerOption，用于在地图上添加Marker
             OverlayOptions option = new MarkerOptions()
                     .position(point) //必传参数
@@ -824,25 +837,23 @@ public class MainActivity extends AppCompatActivity {
                     //设置平贴地图，在地图中双指下拉查看效果
                     .flat(false)
                     .perspective(true)
-                    .anchor((float)0.5,(float)0.5);
+                    .anchor((float) 0.5, (float) 0.5);
             //在地图上添加Marker，并显示
 
 
             Bundle mBundle = new Bundle();
-            mBundle.putString("type","1");
-            mBundle.putString("buildingName",b.getBuildingName());
-            Marker marker =(Marker)mBaiduMap.addOverlay(option);
+            mBundle.putString("type", "1");
+            mBundle.putString("buildingName", b.getBuildingName());
+            Marker marker = (Marker) mBaiduMap.addOverlay(option);
             marker.setExtraInfo(mBundle);
             indoorMarkerList.add(marker); //将marker以id的区别加以管理
         }
     }
 
 
-    private void removeIndoorMarker()
-    {
+    private void removeIndoorMarker() {
         int i = 0;
-        for(i=0; i< indoorMarkerList.size(); i++)
-        {
+        for (i = 0; i < indoorMarkerList.size(); i++) {
             Marker m = indoorMarkerList.get(i);
             m.remove();
         }
@@ -854,8 +865,7 @@ public class MainActivity extends AppCompatActivity {
      */
     private void removeMarker() {
         int i = 0;
-        for(i=0; i< spotMarkerList.size(); i++)
-        {
+        for (i = 0; i < spotMarkerList.size(); i++) {
             Marker m = spotMarkerList.get(i);
             m.remove();
         }
@@ -863,6 +873,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * json解析
+     *
      * @param jsonData
      */
     private void parseJSONWithGSON(String jsonData) {
@@ -871,6 +882,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * 向服务器请求景点信息
+     *
      * @param id
      */
 
@@ -878,159 +890,271 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    //停车场poi检索
+
     /**
-     * 加速度传感器和磁场传感器调用（用来获取方向）
+     * 范围检索
      */
+    private void boundSearch(int page) {
+        PoiBoundSearchOption boundSearchOption = new PoiBoundSearchOption();
+        LatLng northeast = new LatLng(26.072816, 119.206562);// 东北
+        LatLng southwest = new LatLng(26.054511, 119.195926);// 西南
+        LatLngBounds bounds = new LatLngBounds.Builder().include(southwest)
+                .include(northeast).build();// 得到一个地理范围对象
+        boundSearchOption.bound(bounds);// 设置poi检索范围
+        boundSearchOption.pageCapacity(101);
+        boundSearchOption.keyword("停车场");// 检索关键字
+        boundSearchOption.pageNum(page);
+        poiSearch.searchInBound(boundSearchOption);// 发起poi范围检索请求
+    }
 
-    SensorEventListener listener = new SensorEventListener() {
+
+    private MyPoiOverlay poiOverlay;
+    /**
+     * POI检索监听器
+     */
+    OnGetPoiSearchResultListener poiSearchListener = new OnGetPoiSearchResultListener() {
         @Override
-        public void onSensorChanged(SensorEvent event) {
-            if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER){
-                //这里是对象,需要克隆一份,否则共用一份数据
-                accelerometerValues = event.values.clone();
-            }else if(event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD){
-                //这里是对象,需要克隆一份,否则共用一份数据
-                magneticValues = event.values.clone();
+        public void onGetPoiResult(PoiResult poiResult) {
+            if (poiResult == null
+                    || poiResult.error == SearchResult.ERRORNO.RESULT_NOT_FOUND) {// 没有找到检索结果
+                Toast.makeText(MainActivity.this, "未找到结果",
+                        Toast.LENGTH_LONG).show();
+                return;
             }
-            /**
-             * 填充旋转数组r
-             * r:要填充的旋转数组
-             * I:将磁场数据转换成实际的重力坐标中,一般可以设置为null
-             * gravity:加速度传感器数据
-             * geomagnetic:地磁传感器数据
-             */
-            SensorManager.getRotationMatrix(r,null,accelerometerValues,magneticValues);
-            /**
-             * R:旋转数组
-             * values :模拟方向传感器的数据
-             */
-            sensorManager.getOrientation(r,values);
-            double mXDirection =  Math.toDegrees(values[0]);
-            if(Math.abs(mXDirection - lastX)>1.0) {
-                mCurrentDirection = (int)mXDirection;
-                MyLocationData locData = new MyLocationData.Builder()
-                        .accuracy(mCurrentAccracy)
-                        // 此处设置开发者获取到的方向信息，顺时针0-360
-                        .direction( mCurrentDirection ).latitude(mCurrentLantitude)
-                        .longitude(mCurrentLongitude).build();
 
-                mBaiduMap.setMyLocationData(locData);
+            if (poiResult.error == SearchResult.ERRORNO.NO_ERROR) {// 检索结果正常返回
+                //bdMap.clear();
+                poiOverlay = new MyPoiOverlay(mBaiduMap);
+                poiOverlay.setData(poiResult);// 设置POI数据
+                Bundle mBundle = new Bundle();
+                mBundle.putString("type", "2");
+                mBaiduMap.setOnMarkerClickListener(poiOverlay);
+                poiOverlay.addToMap();// 将所有的overlay添加到地图上
+                poiOverlay.zoomToSpan();//调整适合的缩放等级
+                //
             }
-            lastX = mXDirection;
         }
 
         @Override
-        public void onAccuracyChanged(Sensor sensor, int accuracy) {
-            //注册的Sensor精度发生变化时,在此处处理
+        public void onGetPoiDetailResult(PoiDetailResult poiDetailResult) {
+
         }
 
+        @Override
+        public void onGetPoiDetailResult(PoiDetailSearchResult poiDetailSearchResult) {
+
+        }
+
+        @Override
+        public void onGetPoiIndoorResult(PoiIndoorResult poiIndoorResult) {
+
+        }
     };
 
-    public void getSensorManager() {
-        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        /**
-         * 传入的参数决定传感器的类型
-         * Senor.TYPE_ACCELEROMETER: 加速度传感器
-         * Senor.TYPE_LIGHT:光照传感器
-         * Senor.TYPE_GRAVITY:重力传感器
-         * SenorManager.getOrientation(); //方向传感器
-         */
-        accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        magneticFieldSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-    }
-
-
-    @Override
-    protected void onResume() {
-        mMapView.onResume();
-        super.onResume();
-        if(sensorManager != null){
-            //一般在Resume方法中注册
-            /**
-             * 第三个参数决定传感器信息更新速度
-             * SensorManager.SENSOR_DELAY_NORMAL:一般
-             * SENSOR_DELAY_FASTEST:最快
-             * SENSOR_DELAY_GAME:比较快,适合游戏
-             * SENSOR_DELAY_UI:慢
-             */
-            sensorManager.registerListener(listener,accelerometerSensor,SensorManager.SENSOR_DELAY_UI);
-            sensorManager.registerListener(listener,magneticFieldSensor,SensorManager.SENSOR_DELAY_UI);
+    private class MyPoiOverlay extends PoiOverlay {
+        MyPoiOverlay(BaiduMap baiduMap) {
+            super(baiduMap);
         }
-    }
-
-    @Override
-    protected void onPause() {
-        mMapView.onPause();
-        super.onPause();
-        if(sensorManager != null){
-            //解除注册
-            sensorManager.unregisterListener(listener,accelerometerSensor);
-            sensorManager.unregisterListener(listener,magneticFieldSensor);
-        }
-
-    }
-
-    @Override
-    protected void onDestroy() {
-        mLocationClient.stop();
-        mBaiduMap.setMyLocationEnabled(false);
-        mMapView.onDestroy();
-        mMapView = null;
-        super.onDestroy();
-        ActivityCollector.removeActivity(this);//从活动栈中删除活动
-    }
-
-
-
-
-    /**
-     * 定位监听器类
-     */
-    public class MyLocationListener extends BDAbstractLocationListener {
-
-        private boolean isFirstLocate = true;
-        //定位模式
-        //是否是第一次定位
         @Override
-        public void onReceiveLocation(BDLocation location) {
-            if (location == null || mMapView == null){
-                return;
-            }
-            //mapView 销毁后不在处理新接收的位置
-            mCurrentAccracy = location.getRadius();
-            mCurrentLantitude = location.getLatitude();
-            mCurrentLongitude = location.getLongitude();
-            nlocation = location;
-            if (location.getLocType()==BDLocation.TypeGpsLocation||location.getLocType()==BDLocation.TypeNetWorkLocation){
-                navigateTo(location);
-                return;
-            }
+        public boolean onPoiClick(int index) {
+            super.onPoiClick(index);
+            PoiInfo poi = getPoiResult().getAllPoi().get(index);
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setTitle("系统提示");
+            builder.setMessage("您要去往 " + poi.name + " 吗？");
+            builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    Intent intent = new Intent(MainActivity.this, NavigationActivity.class);
+                    intent.putExtra("action", "1");
+                    intent.putExtra("latitude", poi.location.latitude);
+                    intent.putExtra("logitude", poi.location.longitude);
+                    intent.putExtra("destinationName", poi.name);
+                    startActivity(intent);
+                }
+            });
 
-        }
-        private void navigateTo(BDLocation location)
-        {
-            if(isFirstLocate)
-            {
-                LatLng ll = new LatLng(location.getLatitude(),location.getLongitude());
-                MapStatusUpdate update = MapStatusUpdateFactory.newLatLng(ll);
-                mBaiduMap.animateMapStatus(update);
-                update = MapStatusUpdateFactory.zoomTo(18f);
-                mBaiduMap.animateMapStatus(update);
-                isFirstLocate = false;
-            }
+            //取消
+            builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
 
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+// TODO Auto-generated method stub
+                    return;
+                }
+            });
+
+            builder.show();
+
+            return true;
         }
     }
 
-    @Override
-    public void onBackPressed() {//判断用户是否连续点击两次返回按键
-        if(System.currentTimeMillis() - mExitTime < 800) {  //两次连点间隔小于0.8秒
-            ActivityCollector.finishAll();  //关闭所有活动，退出应用
-            android.os.Process.killProcess(android.os.Process.myPid());//关闭进程（彻底关闭应用）
+
+//    /**
+//     * 附近检索
+//     */
+    private void nearbySearch(int page) {
+        PoiNearbySearchOption nearbySearchOption = new PoiNearbySearchOption();
+        nearbySearchOption.location(new LatLng(nlocation.getLatitude(), nlocation.getLongitude()));
+        nearbySearchOption.keyword("停车场");
+        nearbySearchOption.radius(1000);// 检索半径，单位是米
+        nearbySearchOption.pageNum(page);
+        poiSearch.searchNearby(nearbySearchOption);// 发起附近检索请求
+    }
+
+
+        /**
+         * 加速度传感器和磁场传感器调用（用来获取方向）
+         */
+
+        SensorEventListener listener = new SensorEventListener() {
+            @Override
+            public void onSensorChanged(SensorEvent event) {
+                if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+                    //这里是对象,需要克隆一份,否则共用一份数据
+                    accelerometerValues = event.values.clone();
+                } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
+                    //这里是对象,需要克隆一份,否则共用一份数据
+                    magneticValues = event.values.clone();
+                }
+                /**
+                 * 填充旋转数组r
+                 * r:要填充的旋转数组
+                 * I:将磁场数据转换成实际的重力坐标中,一般可以设置为null
+                 * gravity:加速度传感器数据
+                 * geomagnetic:地磁传感器数据
+                 */
+                SensorManager.getRotationMatrix(r, null, accelerometerValues, magneticValues);
+                /**
+                 * R:旋转数组
+                 * values :模拟方向传感器的数据
+                 */
+                sensorManager.getOrientation(r, values);
+                double mXDirection = Math.toDegrees(values[0]);
+                if (Math.abs(mXDirection - lastX) > 1.0) {
+                    mCurrentDirection = (int) mXDirection;
+                    MyLocationData locData = new MyLocationData.Builder()
+                            .accuracy(mCurrentAccracy)
+                            // 此处设置开发者获取到的方向信息，顺时针0-360
+                            .direction(mCurrentDirection).latitude(mCurrentLantitude)
+                            .longitude(mCurrentLongitude).build();
+
+                    mBaiduMap.setMyLocationData(locData);
+                }
+                lastX = mXDirection;
+            }
+
+            @Override
+            public void onAccuracyChanged(Sensor sensor, int accuracy) {
+                //注册的Sensor精度发生变化时,在此处处理
+            }
+
+        };
+
+        public void getSensorManager() {
+            sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+            /**
+             * 传入的参数决定传感器的类型
+             * Senor.TYPE_ACCELEROMETER: 加速度传感器
+             * Senor.TYPE_LIGHT:光照传感器
+             * Senor.TYPE_GRAVITY:重力传感器
+             * SenorManager.getOrientation(); //方向传感器
+             */
+            accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+            magneticFieldSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         }
-        else{
-            Toast.makeText(MainActivity.this,"再按一次返回键退出应用",Toast.LENGTH_SHORT).show();
-            mExitTime = System.currentTimeMillis();   //这里赋值最关键，别忘记
+
+
+        @Override
+        protected void onResume() {
+            mMapView.onResume();
+            super.onResume();
+            if (sensorManager != null) {
+                //一般在Resume方法中注册
+                /**
+                 * 第三个参数决定传感器信息更新速度
+                 * SensorManager.SENSOR_DELAY_NORMAL:一般
+                 * SENSOR_DELAY_FASTEST:最快
+                 * SENSOR_DELAY_GAME:比较快,适合游戏
+                 * SENSOR_DELAY_UI:慢
+                 */
+                sensorManager.registerListener(listener, accelerometerSensor, SensorManager.SENSOR_DELAY_UI);
+                sensorManager.registerListener(listener, magneticFieldSensor, SensorManager.SENSOR_DELAY_UI);
+            }
+        }
+
+        @Override
+        protected void onPause() {
+            mMapView.onPause();
+            super.onPause();
+            if (sensorManager != null) {
+                //解除注册
+                sensorManager.unregisterListener(listener, accelerometerSensor);
+                sensorManager.unregisterListener(listener, magneticFieldSensor);
+            }
+
+        }
+
+        @Override
+        protected void onDestroy() {
+            mLocationClient.stop();
+            mBaiduMap.setMyLocationEnabled(false);
+            mMapView.onDestroy();
+            mMapView = null;
+            super.onDestroy();
+            ActivityCollector.removeActivity(this);//从活动栈中删除活动
+        }
+
+
+        /**
+         * 定位监听器类
+         */
+        public class MyLocationListener extends BDAbstractLocationListener {
+
+            private boolean isFirstLocate = true;
+
+            //定位模式
+            //是否是第一次定位
+            @Override
+            public void onReceiveLocation(BDLocation location) {
+                if (location == null || mMapView == null) {
+                    return;
+                }
+                //mapView 销毁后不在处理新接收的位置
+                mCurrentAccracy = location.getRadius();
+                mCurrentLantitude = location.getLatitude();
+                mCurrentLongitude = location.getLongitude();
+                nlocation = location;
+                if (location.getLocType() == BDLocation.TypeGpsLocation || location.getLocType() == BDLocation.TypeNetWorkLocation) {
+                    navigateTo(location);
+                    return;
+                }
+
+            }
+
+            private void navigateTo(BDLocation location) {
+                if (isFirstLocate) {
+                    LatLng ll = new LatLng(location.getLatitude(), location.getLongitude());
+                    MapStatusUpdate update = MapStatusUpdateFactory.newLatLng(ll);
+                    mBaiduMap.animateMapStatus(update);
+                    update = MapStatusUpdateFactory.zoomTo(18f);
+                    mBaiduMap.animateMapStatus(update);
+                    isFirstLocate = false;
+                }
+
+            }
+        }
+
+        @Override
+        public void onBackPressed() {//判断用户是否连续点击两次返回按键
+            if (System.currentTimeMillis() - mExitTime < 800) {  //两次连点间隔小于0.8秒
+                ActivityCollector.finishAll();  //关闭所有活动，退出应用
+                android.os.Process.killProcess(android.os.Process.myPid());//关闭进程（彻底关闭应用）
+            } else {
+                Toast.makeText(MainActivity.this, "再按一次返回键退出应用", Toast.LENGTH_SHORT).show();
+                mExitTime = System.currentTimeMillis();   //这里赋值最关键，别忘记
+            }
         }
     }
-}
